@@ -39,36 +39,36 @@ const CustomerModule = (() => {
   function renderPage() {
     _container.innerHTML = `
       <div class="fm-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1 class="fm-title">👤 Customer Master</h1>
+        <h1 class="fm-title">👤 ${App.i18n.t('customerMaster')}</h1>
         <div class="fm-header-actions" style="display: flex; gap: 16px; align-items: center;">
-          <button class="fm-tpl-btn ripple" id="c-tpl-btn" title="Download Excel Template" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            📋 Template
+          <button class="fm-tpl-btn ripple" id="c-tpl-btn" title="${App.i18n.t('template')}" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            📋 ${App.i18n.t('template')}
           </button>
-          <label class="fm-import-label ripple" title="Import from Excel" style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; color: #334155;">
-            <span style="font-size: 1.2rem;">📥</span> <span style="padding-top: 2px;">Import</span>
+          <label class="fm-import-label ripple" title="${App.i18n.t('import')}" style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; color: #334155;">
+            <span style="font-size: 1.2rem;">📥</span> <span style="padding-top: 2px;">${App.i18n.t('import')}</span>
             <input type="file" id="c-import-input" accept=".xlsx,.xls" style="display:none" />
           </label>
           <button id="add-cust-btn" class="fm-btn-add ripple" style="background:#fff !important; color:#1e8a4a !important; border:2px solid #1e8a4a !important; font-weight:800 !important; cursor:pointer !important; min-width:130px !important; display:flex !important; align-items:center !important; justify-content:center !important; padding: 0.5rem 1rem; border-radius: 8px;">
-            ＋ Add Customer
+            ＋ ${App.i18n.t('addCustomer')}
           </button>
         </div>
       </div>
       <div class="fm-search-row" style="margin-bottom: 24px; display: flex; align-items: center; gap: 15px;">
         <div class="fm-search-wrap" style="position: relative; flex: 1; max-width: 500px;">
           <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; color: #94a3b8;">🔍</span>
-          <input id="c-search" type="text" placeholder="Search by name or ID..." style="width: 100%; padding: 12px 12px 12px 45px; border: 2px solid #22c55e; background: #fff; border-radius: 9999px; outline: none; font-size: 1rem; color: #334155; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);">
+          <input id="c-search" type="text" placeholder="${App.i18n.t('searchHint')}" style="width: 100%; padding: 12px 12px 12px 45px; border: 2px solid #22c55e; background: #fff; border-radius: 9999px; outline: none; font-size: 1rem; color: #334155; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);">
         </div>
       </div>
       <div class="fm-card animate-fade-in" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
         <table class="fm-table" style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
-              <th style="padding: 1rem;">Customer ID</th>
-              <th style="padding: 1rem;">Name</th>
-              <th style="padding: 1rem;">Contact</th>
-              <th style="padding: 1rem;">Outstanding Amount</th>
-              <th style="padding: 1rem; text-align:center;">Ledger</th>
-              <th style="padding: 1rem; text-align:right">Actions</th>
+              <th style="padding: 1rem;">${App.i18n.t('id')}</th>
+              <th style="padding: 1rem;">${App.i18n.t('name')}</th>
+              <th style="padding: 1rem;">${App.i18n.t('contact')}</th>
+              <th style="padding: 1rem;">${App.i18n.t('amountDue')}</th>
+              <th style="padding: 1rem; text-align:center;">${App.i18n.t('ledger')}</th>
+              <th style="padding: 1rem; text-align:right">${App.i18n.t('actions')}</th>
             </tr>
           </thead>
           <tbody id="cust-list"></tbody>
@@ -104,7 +104,7 @@ const CustomerModule = (() => {
     const filtered = customers.filter(c => c.name.toLowerCase().includes(q) || String(c.id).toLowerCase().includes(q) || String(c.contact).includes(q));
 
     if (filtered.length === 0) {
-      list.innerHTML = '<tr><td colspan="6" class="fm-empty-state" style="padding: 3rem; text-align: center; color: #94a3b8; font-style: italic;">No customers found.</td></tr>';
+      list.innerHTML = `<tr><td colspan="6" class="fm-empty-state" style="padding: 3rem; text-align: center; color: #94a3b8; font-style: italic;">${App.i18n.t('noRecords')}</td></tr>`;
       return;
     }
 
@@ -121,12 +121,12 @@ const CustomerModule = (() => {
         <td style="padding: 1rem; color: #475569;">${c.contact}</td>
         <td class="fm-semi-bold ${isOverLimit ? 'color-red' : 'color-green'}" style="padding: 1rem; font-weight: bold; color: ${isOverLimit ? '#ef4444' : '#10b981'};">₹${dues.toFixed(2)}</td>
         <td style="padding: 1rem; text-align:center;">
-          <button class="fm-ledger-btn ripple" style="background: #e0f2fe; color: #0ea5e9; border: 1px solid #7dd3fc; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-weight: bold; font-size: 0.85rem;" title="View Ledger">📒 View</button>
+          <button class="fm-ledger-btn ripple" style="background: #e0f2fe; color: #0ea5e9; border: 1px solid #7dd3fc; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-weight: bold; font-size: 0.85rem;" title="${App.i18n.t('view')}">${App.i18n.t('view')}</button>
         </td>
         <td style="padding: 1rem;">
           <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
-            <button class="fm-action-btn edit-btn" style="border:none !important; background:transparent !important; cursor:pointer; font-size:1.3rem; padding: 4px; box-shadow: none !important; width: auto !important; height: auto !important;" title="Edit">✏️</button>
-            <button class="fm-action-btn delete-btn" style="border:none !important; background:transparent !important; cursor:pointer; font-size:1.3rem; padding: 4px; box-shadow: none !important; width: auto !important; height: auto !important;" title="Delete">🗑️</button>
+            <button class="fm-action-btn edit-btn" style="border:none !important; background:transparent !important; cursor:pointer; font-size:1.3rem; padding: 4px; box-shadow: none !important; width: auto !important; height: auto !important;" title="${App.i18n.t('edit')}">✏️</button>
+            <button class="fm-action-btn delete-btn" style="border:none !important; background:transparent !important; cursor:pointer; font-size:1.3rem; padding: 4px; box-shadow: none !important; width: auto !important; height: auto !important;" title="${App.i18n.t('delete')}">🗑️</button>
           </div>
         </td>
       `;
@@ -146,29 +146,29 @@ const CustomerModule = (() => {
     overlay.innerHTML = `
       <div class="fm-modal animate-pop fm-modal-show" style="background:#fff; border-radius:16px; width:90%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.2); overflow:hidden;">
         <div class="fm-modal-header" style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f9fcfb;">
-          <h3 class="fm-modal-title" style="margin:0; color:#1e8a4a; font-size:1.4rem; font-weight:800;">${isEdit ? '✏️ Edit Customer' : '👤 Add Customer'}</h3>
+          <h3 class="fm-modal-title" style="margin:0; color:#1e8a4a; font-size:1.4rem; font-weight:800;">${isEdit ? '✏️ ' + App.i18n.t('editCustomer') : '👤 ' + App.i18n.t('addCustomerModal')}</h3>
           <button class="fm-close-btn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999;">✕</button>
         </div>
         <form class="fm-form cust-form" style="padding:25px;">
           <div class="fm-field" style="margin-bottom: 1rem;">
-            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">Customer ID</label>
+            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">${App.i18n.t('id')}</label>
             <input type="text" id="c-id" value="${isEdit ? cust.id : generateId()}" disabled style="width: 100%; padding: 0.75rem; border: 2px solid #f1f5f9; border-radius: 0.75rem; background: #e2e8f0; color: #475569; font-weight:bold;">
           </div>
           <div class="fm-field" style="margin-bottom: 1rem;">
-            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">Name *</label>
+            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">${App.i18n.t('name')} *</label>
             <input type="text" id="c-name" value="${isEdit ? cust.name : ''}" required style="width: 100%; padding: 0.75rem; border: 2px solid #f1f5f9; border-radius: 0.75rem; background: #f8fafc; outline:none;">
           </div>
           <div class="fm-field" style="margin-bottom: 1rem;">
-            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">Contact *</label>
+            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">${App.i18n.t('contact')} *</label>
             <input type="tel" id="c-contact" value="${isEdit ? cust.contact : ''}" required style="width: 100%; padding: 0.75rem; border: 2px solid #f1f5f9; border-radius: 0.75rem; background: #f8fafc; outline:none;">
           </div>
           <div class="fm-field" style="margin-bottom: 1rem;">
-            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">Outstanding Amount (₹)</label>
+            <label style="display:block; font-weight:bold; color:#64748b; margin-bottom:0.5rem; font-size:0.875rem;">${App.i18n.t('initialDues')}</label>
             <input type="number" id="c-dues" value="${isEdit ? cust.initialDues : '0'}" step="0.01" style="width: 100%; padding: 0.75rem; border: 2px solid #f1f5f9; border-radius: 0.75rem; background: #f8fafc; outline:none;">
           </div>
           <div class="fm-modal-footer" style="padding-top:20px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
-            <button type="button" class="cancel-btn" style="padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; color:#64748b; font-weight:bold;">Cancel</button>
-            <button type="submit" class="fm-btn-add" style="padding:10px 25px; border-radius:8px; border:none; background:#10b981; color:#fff; font-weight:800; cursor:pointer;">${isEdit ? 'Update' : 'Register'}</button>
+            <button type="button" class="cancel-btn" style="padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; color:#64748b; font-weight:bold;">${App.i18n.t('cancel')}</button>
+            <button type="submit" class="fm-btn-add" style="padding:10px 25px; border-radius:8px; border:none; background:#10b981; color:#fff; font-weight:800; cursor:pointer;">${isEdit ? App.i18n.t('update') : App.i18n.t('register')}</button>
           </div>
         </form>
       </div>
@@ -209,7 +209,7 @@ const CustomerModule = (() => {
   }
 
   function confirmDelete(idx) {
-    if(confirm('Are you sure you want to delete this customer?')) { 
+    if(confirm(App.i18n.t('deleteCustomerConfirm'))) { 
       customers.splice(idx, 1); 
       saveData(); 
     }
@@ -283,11 +283,10 @@ const CustomerModule = (() => {
     overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
 
     overlay.innerHTML = `
-      <div class="fm-modal fm-modal-show animate-pop" style="background:#fff; border-radius:16px; width:95%; max-width:800px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.2); overflow:hidden;">
-        <div class="fm-modal-header" style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f9fcfb;">
+      <div class="fm-modal fm-modal-show animate-pop" style="background:#fff; border-radius:16px; width:95%; max-width:800px; max-height:90vh; display:flex; flex-direction:column; box-s        <div class="fm-modal-header" style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f9fcfb;">
           <div>
-            <h3 style="margin:0; color:#1e8a4a; font-size:1.4rem; font-weight:800;">📒 Customer Ledger</h3>
-            <div style="font-weight: bold; color: #334155; margin-top: 4px;">${cust.name} <span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-left:8px;">${cust.id}</span></div>
+            <h3 style="margin:0; color:#1e8a4a; font-size:1.4rem; font-weight:800;">📒 ${App.i18n.t('ledger')}</h3>
+            <div style="font-weight: bold; color: #334155; margin-top: 4px;">${cust.name} <span style="background:#f1f5f9; padding:2px 6px; border-radius:6px; font-size:0.8rem; margin-left:8px;">${cust.id}</span></div>
           </div>
           <button class="fm-close-btn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999;">✕</button>
         </div>
@@ -295,24 +294,24 @@ const CustomerModule = (() => {
         <div class="fm-modal-body" style="padding:20px; flex:1; overflow-y:auto; background:#f8fafc;">
           <div style="display:flex; gap:16px; margin-bottom: 20px; align-items: end; flex-wrap: wrap;">
             <div>
-              <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">Date Range</label>
+              <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">${App.i18n.t('dateRange')}</label>
               <select id="l-preset" style="padding:8px 12px; border:2px solid #e2e8f0; border-radius:8px; outline:none; font-weight:bold; color:#334155;">
-                <option value="all">📅 All Time</option>
-                <option value="this-month">This Month</option>
-                <option value="prev-month">Previous Month</option>
-                <option value="custom">📆 Custom Range</option>
+                <option value="all">📅 ${App.i18n.t('allTime')}</option>
+                <option value="this-month">${App.i18n.t('thisMonth')}</option>
+                <option value="prev-month">${App.i18n.t('lastMonth')}</option>
+                <option value="custom">📆 ${App.i18n.t('customDate')}</option>
               </select>
             </div>
             <div id="l-custom-dates" style="display:none; gap:12px; align-items:end;">
               <div>
-                <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">From</label>
+                <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">${App.i18n.t('from')}</label>
                 <input type="date" id="l-from" style="padding:8px 12px; border:2px solid #e2e8f0; border-radius:8px; outline:none; color:#334155;">
               </div>
               <div>
-                <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">To</label>
+                <label style="display:block; font-weight:bold; color:#64748b; font-size:0.85rem; margin-bottom:4px;">${App.i18n.t('to')}</label>
                 <input type="date" id="l-to" style="padding:8px 12px; border:2px solid #e2e8f0; border-radius:8px; outline:none; color:#334155;">
               </div>
-              <button id="l-apply" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Apply</button>
+              <button id="l-apply" style="padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">${App.i18n.t('apply')}</button>
             </div>
           </div>
           
@@ -320,21 +319,24 @@ const CustomerModule = (() => {
             <table style="width:100%; border-collapse:collapse; text-align:left;">
               <thead style="background:#f1f5f9; border-bottom:2px solid #e2e8f0;">
                 <tr>
-                  <th style="padding:12px; color:#475569;">Date</th>
-                  <th style="padding:12px; color:#475569;">Description</th>
-                  <th style="padding:12px; color:#475569; text-align:right;">Debit (₹)</th>
-                  <th style="padding:12px; color:#475569; text-align:right;">Credit (₹)</th>
-                  <th style="padding:12px; color:#475569; text-align:right;">Balance (₹)</th>
+                  <th style="padding:12px; color:#475569;">${App.i18n.t('date')}</th>
+                  <th style="padding:12px; color:#475569;">${App.i18n.t('description')}</th>
+                  <th style="padding:12px; color:#475569; text-align:right;">${App.i18n.t('debit')} (₹)</th>
+                  <th style="padding:12px; color:#475569; text-align:right;">${App.i18n.t('credit')} (₹)</th>
+                  <th style="padding:12px; color:#475569; text-align:right;">${App.i18n.t('balanceAmount')} (₹)</th>
                 </tr>
               </thead>
               <tbody id="l-body"></tbody>
+            </table>
+          </div>
+        </div>l-body"></tbody>
             </table>
           </div>
         </div>
         
         <div class="fm-modal-footer" style="padding:20px; border-top:1px solid #eee; background:#fff; display:flex; justify-content:space-between; align-items:center;">
           <div id="l-summary" style="display:flex; gap:16px; font-weight:bold; font-size:0.95rem;"></div>
-          <button class="cancel-btn" style="padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; color:#64748b; font-weight:bold;">Close</button>
+          <button class="cancel-btn" style="padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; color:#64748b; font-weight:bold;">${App.i18n.t('close')}</button>
         </div>
       </div>
     `;
@@ -386,7 +388,7 @@ const CustomerModule = (() => {
       let balance = parseFloat(cust.initialDues) || 0;
       
       let html = '<tr style="border-bottom:1px solid #f1f5f9; background:#fffbdd;">';
-      html += '<td colspan="2" style="padding:12px; font-style:italic; color:#64748b;">Opening Balance / Initial Dues</td>';
+      html += '<td colspan="2" style="padding:12px; font-style:italic; color:#64748b;">' + App.i18n.t('openingBalance') + '</td>';
       html += '<td style="padding:12px;"></td><td style="padding:12px;"></td>';
       html += '<td style="padding:12px; text-align:right; font-weight:bold; color:' + (balance > 0 ? '#ef4444' : '#10b981') + ';">₹' + balance.toFixed(2) + '</td></tr>';
 
@@ -408,14 +410,14 @@ const CustomerModule = (() => {
       });
       
       if (rows.length === 0) {
-        html += '<tr><td colspan="5" style="padding:32px; text-align:center; color:#94a3b8; font-style:italic;">No ledger transactions found for this period.</td></tr>';
+        html += '<tr><td colspan="5" style="padding:32px; text-align:center; color:#94a3b8; font-style:italic;">' + App.i18n.t('noRecords') + '</td></tr>';
       }
 
       tbody.innerHTML = html;
       
-      summary.innerHTML = '<span style="color:#ef4444;">↑ Total Debit: ₹' + totalDr.toFixed(2) + '</span>' +
-                          '<span style="color:#10b981;">↓ Total Credit: ₹' + totalCr.toFixed(2) + '</span>' +
-                          '<span style="margin-left:16px; color:' + (balance > 0 ? '#ef4444' : '#10b981') + ';">Net Balance: ₹' + Math.abs(balance).toFixed(2) + ' ' + (balance > 0 ? 'DR' : (balance < 0 ? 'CR' : '')) + '</span>';
+      summary.innerHTML = '<span style="color:#ef4444;">↑ ' + App.i18n.t('totalDebit') + ': ₹' + totalDr.toFixed(2) + '</span>' +
+                          '<span style="color:#10b981;">↓ ' + App.i18n.t('totalCredit') + ': ₹' + totalCr.toFixed(2) + '</span>' +
+                          '<span style="margin-left:16px; color:' + (balance > 0 ? '#ef4444' : '#10b981') + ';">' + App.i18n.t('balanceAmount') + ': ₹' + Math.abs(balance).toFixed(2) + ' ' + (balance > 0 ? 'DR' : (balance < 0 ? 'CR' : '')) + '</span>';
     }
 
     drawLedger('', '');

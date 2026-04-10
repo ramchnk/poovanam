@@ -619,33 +619,33 @@ const FarmerModule = (() => {
         <div class="fm-modal-body">
           <div class="fm-ledger-filters">
             <div class="fm-filter-group">
-              <label class="fm-label">Date Range</label>
+              <label class="fm-label">${App.i18n.t('dateRange')}</label>
               <select id="fm-date-preset" class="fm-select">
-                <option value="all">📅 All Time</option>
-                <option value="this-week">This Week</option>
-                <option value="this-month">This Month</option>
-                <option value="prev-month">Previous Month</option>
-                <option value="this-year">This Year</option>
-                <option value="custom">📆 Custom Range</option>
+                <option value="all">📅 ${App.i18n.t('allTime')}</option>
+                <option value="this-week">${App.i18n.t('thisWeek')}</option>
+                <option value="this-month">${App.i18n.t('thisMonth')}</option>
+                <option value="prev-month">${App.i18n.t('lastMonth')}</option>
+                <option value="this-year">${App.i18n.t('thisYear')}</option>
+                <option value="custom">📆 ${App.i18n.t('customDate')}</option>
               </select>
             </div>
             <div id="fm-custom-dates" class="fm-custom-dates hidden">
               <div class="fm-field-inline">
-                <label class="fm-label">From</label>
+                <label class="fm-label">${App.i18n.t('from')}</label>
                 <input id="fm-lfrom" type="date" class="fm-input fm-date-inp" />
               </div>
               <div class="fm-field-inline">
-                <label class="fm-label">To</label>
+                <label class="fm-label">${App.i18n.t('to')}</label>
                 <input id="fm-lto" type="date" class="fm-input fm-date-inp" />
               </div>
-              <button class="fm-pg-btn ripple" id="fm-l-apply">Apply</button>
+              <button class="fm-pg-btn ripple" id="fm-l-apply">${App.i18n.t('apply')}</button>
             </div>
           </div>
           <div id="fm-ledger-body" class="fm-ledger-body"></div>
         </div>
         <div class="fm-modal-footer fm-ledger-footer">
           <div id="fm-ledger-summary" class="fm-ledger-summary"></div>
-          <button class="fm-btn-cancel ripple" id="fm-ledger-close2">Close</button>
+          <button class="fm-btn-cancel ripple" id="fm-ledger-close2">${App.i18n.t('close')}</button>
         </div>
       </div>`;
 
@@ -695,7 +695,7 @@ const FarmerModule = (() => {
       if (rows.length === 0) {
         body.innerHTML = `<div class="fm-empty">
           <div class="fm-empty-emoji">📋</div>
-          <p class="fm-empty-text">No ledger entries for this period.</p>
+          <p class="fm-empty-text">${App.i18n.t('noRecords')}</p>
         </div>`;
         if (sumEl) sumEl.innerHTML = '';
         return;
@@ -704,13 +704,13 @@ const FarmerModule = (() => {
       let balance = Number(farmer.initialDues) || 0;
       let html = `<div class="fm-tbl-scroll"><table class="fm-table">
         <thead><tr>
-          <th>Date</th><th>Description</th>
-          <th class="th-num">Debit (₹)</th>
-          <th class="th-num">Credit (₹)</th>
-          <th class="th-num">Balance (₹)</th>
+          <th>${App.i18n.t('date')}</th><th>${App.i18n.t('description')}</th>
+          <th class="th-num">${App.i18n.t('debit')} (₹)</th>
+          <th class="th-num">${App.i18n.t('credit')} (₹)</th>
+          <th class="th-num">${App.i18n.t('balanceAmount')} (₹)</th>
         </tr></thead><tbody>
         <tr class="fm-row fm-opening-row">
-          <td colspan="2"><em>Opening Balance</em></td>
+          <td colspan="2"><em>${App.i18n.t('openingBalance')}</em></td>
           <td></td><td></td>
           <td class="th-num fm-balance-cell">₹${fmt(balance)}</td>
         </tr>`;
@@ -733,9 +733,9 @@ const FarmerModule = (() => {
       const totalDr = rows.reduce((s,r) => s+(Number(r.debit)||0), 0);
       const totalCr = rows.reduce((s,r) => s+(Number(r.credit)||0), 0);
       if (sumEl) sumEl.innerHTML = `
-        <span class="fm-sum-item ldr-debit">↑ Debit: ₹${fmt(totalDr)}</span>
-        <span class="fm-sum-item ldr-credit">↓ Credit: ₹${fmt(totalCr)}</span>
-        <span class="fm-sum-item ${balance<0?'due-cr':'due-dr'}">Balance: ₹${fmt(Math.abs(balance))} ${balance<0?'CR':'DR'}</span>`;
+        <span class="fm-sum-item ldr-debit">↑ ${App.i18n.t('totalDebit')}: ₹${fmt(totalDr)}</span>
+        <span class="fm-sum-item ldr-credit">↓ ${App.i18n.t('totalCredit')}: ₹${fmt(totalCr)}</span>
+        <span class="fm-sum-item ${balance<0?'due-cr':'due-dr'}">${App.i18n.t('balanceAmount')}: ₹${fmt(Math.abs(balance))} ${balance<0?'CR':'DR'}</span>`;
     }
 
     drawLedger('', '');

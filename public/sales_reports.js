@@ -27,18 +27,18 @@ const CashReceiveModule = (() => {
   function renderPage() {
     _container.innerHTML = `
       <div class="fm-page-header">
-        <h1 class="fm-title">💰 Cash Receive</h1>
-        <button id="add-receipt-btn" class="fm-btn-add">＋ Receive Payment</button>
+        <h1 class="fm-title">💰 ${App.i18n.t('cashReceive')}</h1>
+        <button id="add-receipt-btn" class="fm-btn-add">＋ ${App.i18n.t('receivePayment')}</button>
       </div>
       <div class="fm-card animate-fade-in">
         <table class="fm-table">
           <thead>
             <tr>
-              <th>Date</th><th>Customer Name</th><th>Amount Received</th><th>Notes</th><th style="text-align:right">Action</th>
+              <th>${App.i18n.t('date')}</th><th>${App.i18n.t('customerName')}</th><th>${App.i18n.t('amountReceived')}</th><th>${App.i18n.t('notes')}</th><th style="text-align:right">${App.i18n.t('action')}</th>
             </tr>
           </thead>
           <tbody id="receipt-list">
-            ${receipts.length === 0 ? `<tr><td colspan="5" class="fm-empty-state">No receipts found.</td></tr>` : ''}
+            ${receipts.length === 0 ? `<tr><td colspan="5" class="fm-empty-state">${App.i18n.t('noRecords')}</td></tr>` : ''}
           </tbody>
         </table>
       </div>
@@ -73,7 +73,7 @@ const CashReceiveModule = (() => {
     modal.innerHTML = `
       <div class="fm-modal animate-pop" style="background:#fff; border-radius:12px; width:95%; max-width:600px; box-shadow:0 10px 40px rgba(0,0,0,0.2); overflow:hidden; position:relative;">
         <div class="fm-modal-header" style="padding:15px 20px; background:#1e8a4a; display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="margin:0; color:#fff; font-size:1.4rem; font-weight:800;">Cash Receive</h2>
+          <h2 style="margin:0; color:#fff; font-size:1.4rem; font-weight:800;">${App.i18n.t('cashReceive')}</h2>
           <button class="fm-close-btn" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
         <form class="fm-form receipt-form" style="padding:25px; display:flex; flex-direction:column; gap:12px;">
@@ -81,22 +81,22 @@ const CashReceiveModule = (() => {
 
           <!-- Customer Row -->
           <div style="display:grid; grid-template-columns: 200px 1fr; align-items:center; gap:15px;">
-            <label style="font-weight:bold; color:#334155;">Customer</label>
+            <label style="font-weight:bold; color:#334155;">${App.i18n.t('customer')}</label>
             <select id="r-cust" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; outline:none;" required>
-              <option value="">Select Customer</option>
+              <option value="">${App.i18n.t('selectCustomer')}</option>
               ${custs.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('')}
             </select>
           </div>
 
           <!-- Opening Balance Row -->
           <div style="display:grid; grid-template-columns: 200px 1fr; align-items:center; gap:15px;">
-            <label style="font-weight:bold; color:#334155;">Opening Balance / Debit</label>
+            <label style="font-weight:bold; color:#334155;">${App.i18n.t('openingBalance')}</label>
             <div id="r-opening" style="padding:8px; font-weight:bold; color:#475569;">₹0.00</div>
           </div>
 
           <!-- Given Amount Row -->
           <div style="display:grid; grid-template-columns: 200px 1fr; align-items:center; gap:15px;">
-            <label style="font-weight:bold; color:#334155;">Given Amount</label>
+            <label style="font-weight:bold; color:#334155;">${App.i18n.t('givenAmount')}</label>
             <div style="display:flex; align-items:center; gap:10px;">
               <input type="number" id="r-amount" placeholder="0.00" step="0.01" style="flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:6px; outline:none;" required>
               <label style="display:flex; align-items:center; gap:6px; color:#475569; font-size:0.9rem; font-weight:600;">
@@ -107,7 +107,7 @@ const CashReceiveModule = (() => {
 
           <!-- Closing Balance Row -->
           <div style="display:grid; grid-template-columns: 200px 1fr; align-items:center; gap:15px;">
-            <label style="font-weight:bold; color:#334155;">Closing Balance</label>
+            <label style="font-weight:bold; color:#334155;">${App.i18n.t('closingBalance')}</label>
             <div id="r-closing" style="padding:8px; font-weight:bold; color:#1e8a4a;">₹0.00</div>
           </div>
 
@@ -115,7 +115,7 @@ const CashReceiveModule = (() => {
             <button type="submit" style="background:#1e8a4a; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:8px;">
                <span style="font-size:1.2rem;">✅</span>
             </button>
-            <button type="button" class="cancel-btn" style="background:#64748b; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">Close</button>
+            <button type="button" class="cancel-btn" style="background:#64748b; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">${App.i18n.t('close')}</button>
           </div>
         </form>
       </div>
@@ -173,7 +173,7 @@ const CashReceiveModule = (() => {
       if (!custs[idx].ledger) custs[idx].ledger = [];
       custs[idx].ledger.push({
         date: r.date,
-        description: `Cash Received: ${r.notes || 'No notes'}`,
+        description: `${App.i18n.t('cashReceived')}: ${r.notes || '—'}`,
         debit: 0,
         credit: r.amount
       });
@@ -182,7 +182,7 @@ const CashReceiveModule = (() => {
   }
 
   function confirmDelete(idx) {
-    if(confirm('Delete receipt?')) { receipts.splice(idx, 1); saveData(); }
+    if(confirm(App.i18n.t('deleteConfirm'))) { receipts.splice(idx, 1); saveData(); }
   }
 
   return { init };
@@ -261,52 +261,52 @@ const CustomerReportModule = (() => {
         <div style="display: flex; align-items: center; gap: 15px;">
           <h1 class="fm-title" style="margin:0; font-size: 1.5rem;">📈 ${App.i18n.t('customerReport')}</h1>
           <div style="height: 24px; width: 2px; background: #e2e8f0;"></div>
-          <p style="color: #64748b; margin: 0; font-size: 0.9rem; font-weight: 600;">${reportState.start} to ${reportState.end}</p>
+          <p style="color: #64748b; margin: 0; font-size: 0.9rem; font-weight: 600;">${reportState.start} ${App.i18n.t('to')} ${reportState.end}</p>
         </div>
         
         <div style="display: flex; align-items: center; gap: 15px;">
            <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px;">
-              <button class="report-tab-btn ${reportState.view === 'today' ? 'active' : ''}" data-view="today" style="padding: 4px 12px; border-radius: 6px; border: none; background: ${reportState.view === 'today' ? '#10b981' : 'transparent'}; color: ${reportState.view === 'today' ? '#fff' : '#475569'}; cursor: pointer; font-size: 0.85rem; font-weight: 700;">Today</button>
-              <button class="report-tab-btn ${reportState.view === 'month' ? 'active' : ''}" data-view="month" style="padding: 4px 12px; border-radius: 6px; border: none; background: ${reportState.view === 'month' ? '#10b981' : 'transparent'}; color: ${reportState.view === 'month' ? '#fff' : '#475569'}; cursor: pointer; font-size: 0.85rem; font-weight: 700;">Month</button>
+              <button class="report-tab-btn ${reportState.view === 'today' ? 'active' : ''}" data-view="today" style="padding: 4px 12px; border-radius: 6px; border: none; background: ${reportState.view === 'today' ? '#10b981' : 'transparent'}; color: ${reportState.view === 'today' ? '#fff' : '#475569'}; cursor: pointer; font-size: 0.85rem; font-weight: 700;">${App.i18n.t('today')}</button>
+              <button class="report-tab-btn ${reportState.view === 'month' ? 'active' : ''}" data-view="month" style="padding: 4px 12px; border-radius: 6px; border: none; background: ${reportState.view === 'month' ? '#10b981' : 'transparent'}; color: ${reportState.view === 'month' ? '#fff' : '#475569'}; cursor: pointer; font-size: 0.85rem; font-weight: 700;">${App.i18n.t('month')}</button>
            </div>
            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
               <input type="date" id="rep-start" value="${reportState.start}" style="padding: 2px 5px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem;">
-              <span style="color: #64748b; font-size: 0.8rem;">to</span>
+              <span style="color: #64748b; font-size: 0.8rem;">${App.i18n.t('to')}</span>
               <input type="date" id="rep-end" value="${reportState.end}" style="padding: 2px 5px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem;">
-              <button id="apply-range" style="background: #3b82f6; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Apply</button>
+              <button id="apply-range" style="background: #3b82f6; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">${App.i18n.t('apply')}</button>
            </div>
             <div style="display: flex; gap: 8px;">
-               <button id="rep-whatsapp" title="WhatsApp Summary" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #25D366; background: #fff; color: #25D366; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+               <button id="rep-whatsapp" title="${App.i18n.t('whatsappSummary')}" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #25D366; background: #fff; color: #25D366; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                </button>
-              <button id="rep-csv" title="CSV Export" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #64748b; background: #fff; color: #64748b; cursor: pointer;">📊</button>
-           </div>
-        </div>
+              <button id="rep-csv" title="${App.i18n.t('csvExport')}" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #64748b; background: #fff; color: #64748b; cursor: pointer;">📊</button>
+            </div>
+         </div>
       </div>
 
       <div class="fm-report-controls" style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
         <div class="fm-stat-strip" style="flex: 1; display: flex; gap: 10px;">
           <div style="background: #eff6ff; padding: 8px 15px; border-radius: 8px; border-left: 4px solid #3b82f6; flex: 1;">
-            <div style="font-size: 0.7rem; color: #1e40af; font-weight: 800; text-transform: uppercase;">Sales</div>
+            <div style="font-size: 0.7rem; color: #1e40af; font-weight: 800; text-transform: uppercase;">${App.i18n.t('sales')}</div>
             <div style="font-size: 1.1rem; font-weight: 900; color: #1e3a8a;">₹${totalSalesInRange.toFixed(2)}</div>
           </div>
           <div style="background: #ecfdf5; padding: 8px 15px; border-radius: 8px; border-left: 4px solid #10b981; flex: 1;">
-            <div style="font-size: 0.7rem; color: #065f46; font-weight: 800; text-transform: uppercase;">Paid</div>
+            <div style="font-size: 0.7rem; color: #065f46; font-weight: 800; text-transform: uppercase;">${App.i18n.t('paid')}</div>
             <div style="font-size: 1.1rem; font-weight: 900; color: #064e3b;">₹${totalPaidInRange.toFixed(2)}</div>
           </div>
           <div style="background: #fff7ed; padding: 8px 15px; border-radius: 8px; border-left: 4px solid #f97316; flex: 1;">
-            <div style="font-size: 0.7rem; color: #9a3412; font-weight: 800; text-transform: uppercase;">Net</div>
+            <div style="font-size: 0.7rem; color: #9a3412; font-weight: 800; text-transform: uppercase;">${App.i18n.t('net')}</div>
             <div style="font-size: 1.1rem; font-weight: 900; color: #7c2d12;">₹${(totalSalesInRange - totalPaidInRange).toFixed(2)}</div>
           </div>
           <div style="background: #fef2f2; padding: 8px 15px; border-radius: 8px; border-left: 4px solid #ef4444; flex: 1;">
-            <div style="font-size: 0.7rem; color: #991b1b; font-weight: 800; text-transform: uppercase;">Dues</div>
+            <div style="font-size: 0.7rem; color: #991b1b; font-weight: 800; text-transform: uppercase;">${App.i18n.t('dues')}</div>
             <div style="font-size: 1.1rem; font-weight: 900; color: #7f1d1d;">₹${totalDuesOverall.toFixed(2)}</div>
           </div>
         </div>
 
         <div style="width: 300px; position: relative;">
           <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #10b981;">🔍</span>
-          <input id="rep-search" type="text" placeholder="Search customer ID/name..." value="${reportState.searchTerm}" style="width: 100%; padding: 8px 12px 8px 35px; border: 1px solid #10b981; border-radius: 8px; outline: none; font-size: 0.9rem; font-weight: 600;">
+          <input id="rep-search" type="text" placeholder="${App.i18n.t('searchHint')}" value="${reportState.searchTerm}" style="width: 100%; padding: 8px 12px 8px 35px; border: 1px solid #10b981; border-radius: 8px; outline: none; font-size: 0.9rem; font-weight: 600;">
         </div>
       </div>
 
@@ -315,11 +315,11 @@ const CustomerReportModule = (() => {
           <table class="fm-table" style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background: #f8fafc; border-bottom: 2px solid #f1f5f9; position: sticky; top: 0; z-index: 10;">
               <tr>
-                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">Customer Name</th>
-                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">Sales</th>
-                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">Paid</th>
-                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">Balance</th>
-                <th style="padding: 10px 15px; text-align: right; font-size: 0.85rem; background: #f8fafc; min-width: 100px;">Action</th>
+                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">${App.i18n.t('customerName')}</th>
+                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">${App.i18n.t('sales')}</th>
+                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">${App.i18n.t('paid')}</th>
+                <th style="padding: 10px 15px; font-size: 0.85rem; background: #f8fafc;">${App.i18n.t('balance')}</th>
+                <th style="padding: 10px 15px; text-align: right; font-size: 0.85rem; background: #f8fafc; min-width: 100px;">${App.i18n.t('action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -333,14 +333,14 @@ const CustomerReportModule = (() => {
                     <td style="padding: 8px 15px; font-weight: 600; color: #10b981; font-size: 0.95rem;">₹${c.paidVol.toFixed(2)}</td>
                     <td style="padding: 8px 15px; font-weight: 800; color: ${c.currentDues > 0 ? '#ef4444' : '#1e293b'}; font-size: 0.95rem;">₹${c.currentDues.toFixed(2)}</td>
                     <td style="padding: 8px 15px; text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-                        <button class="print-cust-bill" data-idx="${c.id}" style="background: #3b82f6; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;" title="Print Bill">🖨️</button>
-                        <button class="send-cust-wa" data-idx="${c.id}" style="background: #25D366; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;" title="Send WhatsApp Bill">
+                        <button class="print-cust-bill" data-idx="${c.id}" style="background: #3b82f6; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;" title="${App.i18n.t('print')}">🖨️</button>
+                        <button class="send-cust-wa" data-idx="${c.id}" style="background: #25D366; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;" title="${App.i18n.t('whatsapp')}">
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                         </button>
                     </td>
                   </tr>
               `).join('')}
-              ${finalReportData.length === 0 ? '<tr><td colspan="5" style="padding: 50px; text-align: center; color: #94a3b8; font-style: italic;">No customer matches found.</td></tr>' : ''}
+              ${finalReportData.length === 0 ? `<tr><td colspan="5" style="padding: 50px; text-align: center; color: #94a3b8; font-style: italic;">${App.i18n.t('noRecords')}</td></tr>` : ''}
             </tbody>
           </table>
         </div>
@@ -381,7 +381,7 @@ const CustomerReportModule = (() => {
     _container.querySelector('#rep-csv').addEventListener('click', () => {
        // --- Section 1: Summaries ---
        const summaryHeaders = ['SECTION: CUSTOMER SUMMARIES', '', '', '', '', ''];
-       const rowHeaders = ['Customer Name', 'ID', 'Initial Dues', 'Sales in Period', 'Paid in Period', 'Final Balance'];
+       const rowHeaders = [App.i18n.t('customerName'), 'ID', App.i18n.t('initialDues'), App.i18n.t('sales'), App.i18n.t('paid'), App.i18n.t('balance')];
        const summaryRows = finalReportData.map(c => [
          c.name, 
          c.id, 
@@ -393,8 +393,8 @@ const CustomerReportModule = (() => {
 
        // --- Section 2: Detailed Transaction Log ---
        const logHeaders = ['', '', '', '', '', ''];
-       const logTitle = ['SECTION: DETAILED TRANSACTION LOG (EXACT VALUES)', '', '', '', '', ''];
-       const logRowHeaders = ['Date', 'Customer Name', 'Type', 'ID/Ref', 'Amount (₹)', 'Method/Note'];
+       const logTitle = ['SECTION: DETAILED TRANSACTION LOG', '', '', '', '', ''];
+       const logRowHeaders = [App.i18n.t('date'), App.i18n.t('customerName'), App.i18n.t('type'), 'ID/Ref', App.i18n.t('amount'), App.i18n.t('notes')];
        
        const transactionLog = [];
        // Add all sales
@@ -432,7 +432,14 @@ const CustomerReportModule = (() => {
     });
 
     _container.querySelector('#rep-whatsapp').addEventListener('click', () => {
-       const text = `📊 *Market Report Summary*%0APeriod: ${reportState.start} to ${reportState.end}%0A---------------------------%0ATotal Sales: ₹${totalSalesInRange.toFixed(2)}%0ACash Received: ₹${totalPaidInRange.toFixed(2)}%0A---------------------------%0AKeep Growing! 🌿`;
+       const isTa = App.i18n.lang === 'ta';
+       const title = isTa ? "*சந்தை அறிக்கை சுருக்கம்*" : "*Market Report Summary*";
+       const periodLabel = isTa ? "காலம்" : "Period";
+       const salesLabel = isTa ? "மொத்த விற்பனை" : "Total Sales";
+       const paidLabel = isTa ? "வசூலான தொகை" : "Cash Received";
+       const footer = isTa ? "தொடர்ந்து வளர வாழ்த்துகள்! 🌿" : "Keep Growing! 🌿";
+
+       const text = `${title}%0A${periodLabel}: ${reportState.start} ${App.i18n.t('to')} ${reportState.end}%0A---------------------------%0A${salesLabel}: ₹${totalSalesInRange.toFixed(2)}%0A${paidLabel}: ₹${totalPaidInRange.toFixed(2)}%0A---------------------------%0A${footer}`;
        window.open(`https://wa.me/?text=${text}`, '_blank');
      });
 
@@ -493,7 +500,6 @@ const CustomerReportModule = (() => {
             
             const itemsTotal = allItems.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
             const profile = App.getProfile();
-            const footer = "🌸 நன்றி 🌸";
 
             const shopName = (isTa && profile.nameTa) ? profile.nameTa : profile.name;
             const h = isTa ? "ID  வகை           எடை   விலை   தொகை" : "ID  VARIETY      QTY    RATE   TOTAL";
@@ -508,7 +514,7 @@ const CustomerReportModule = (() => {
                return `${id} ${namePad} ${qty} ${rate} ${total}`;
             }).join('%0A');
 
-            const text = `*${shopName}*%0A${profile.phone ? 'Ph: ' + profile.phone + '%0A' : ''}---------------------------%0A*CUST:* ${c.name}%0A*PERIOD:* ${reportState.start} to ${reportState.end}%0A---------------------------%0A\`\`\`%0A${h}%0A${itemsText}%0A\`\`\`%0A---------------------------%0A${isTa ? 'இன்றைய சரக்கு' : "Today's Total"}: *₹${itemsTotal.toLocaleString()}*%0A${isTa ? 'முன் பாக்கி' : 'Prev Balance'}: *₹${prevBalance.toLocaleString()}*%0A${isTa ? 'மொத்தம்' : 'Grand Total'}: *₹${(itemsTotal + prevBalance).toLocaleString()}*%0A${isTa ? 'வரவு' : 'Received'}: *₹${paidInPeriod.toLocaleString()}*%0A${isTa ? 'பாக்கி' : 'Balance'}: *₹${c.currentDues.toLocaleString()}*%0A---------------------------%0ANandri / Thank You`;
+            const text = `*${shopName}*%0A${profile.phone ? 'Ph: ' + profile.phone + '%0A' : ''}---------------------------%0A*CUST:* ${c.name}%0A*PERIOD:* ${reportState.start} ${App.i18n.t('to')} ${reportState.end}%0A---------------------------%0A\`\`\`%0A${h}%0A${itemsText}%0A\`\`\`%0A---------------------------%0A${isTa ? 'இன்றைய சரக்கு' : "Today's Total"}: *₹${itemsTotal.toLocaleString()}*%0A${isTa ? 'முன் பாக்கி' : 'Prev Balance'}: *₹${prevBalance.toLocaleString()}*%0A${isTa ? 'மொத்தம்' : 'Grand Total'}: *₹${(itemsTotal + prevBalance).toLocaleString()}*%0A${isTa ? 'வரவு' : 'Received'}: *₹${paidInPeriod.toLocaleString()}*%0A${isTa ? 'பாக்கி' : 'Balance'}: *₹${c.currentDues.toLocaleString()}*%0A---------------------------%0A${isTa ? 'நன்றி' : 'Thank You'}`;
             
             window.open(`https://wa.me/91${c.contact}?text=${text}`, '_blank');
          });

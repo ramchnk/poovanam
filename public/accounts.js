@@ -198,7 +198,7 @@ const AccountsModule = (() => {
     displayList.forEach((f, idx) => {
       const row = document.createElement('tr');
       row.className = 'fm-row fm-drilldown-row';
-      row.title = 'Click to open Farmer Ledger';
+      row.title = App.i18n.t('view');
       
       const balStr = `₹${Math.abs(f.net).toFixed(2)} ${f.net < 0 ? 'CR' : 'DR'}`;
       const balClass = f.net > 0 ? 'due-dr' : f.net < 0 ? 'due-cr' : 'due-zero';
@@ -244,7 +244,15 @@ const AccountsModule = (() => {
     // Download Excel
     _container.querySelector('#month-dl-btn').addEventListener('click', () => {
       if (typeof XLSX === 'undefined') return alert('Excel library not loaded.');
-      const headers = ['S.No', 'Farmer Name', 'Farmer ID', 'Location', 'Debit (Purchase)', 'Credit (Payment)', 'Net Balance'];
+      const headers = [
+        App.i18n.t('sNo'), 
+        App.i18n.t('farmer') + ' ' + App.i18n.t('name'), 
+        App.i18n.t('id'), 
+        App.i18n.t('location'), 
+        App.i18n.t('debit'), 
+        App.i18n.t('credit'), 
+        App.i18n.t('total')
+      ];
       const rows = displayList.map((f, i) => [
         i + 1, f.name, f.id, f.location, f.p, f.pay, f.net
       ]);

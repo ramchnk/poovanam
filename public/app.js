@@ -67,15 +67,15 @@ const App = (() => {
     strings: {
       en: {
         login: 'Login', username: 'Username', password: 'Password',
-        farmer: 'Farmer', sales: 'Sales', exit: 'Exit / Logout',
+        farmer: 'Farmer', sales: 'Sales', exit: 'Exit',
         addFarmer: 'Farmer', absentFarmer: 'Absent Farmer',
         flower: 'Flower', purchase: 'Purchase', cashPay: 'Cash Pay',
         expenses: 'Expenses', dayAccount: 'Day Account', monthAccount: 'Month Account',
         customer: 'Customer', cashReceive: 'Cash Receive',
-        customerReport: 'Customer Report', back: 'BACK',
+        customerReport: 'Customer Report', back: 'Back',
         welcome: 'Welcome', invalidCreds: 'Invalid credentials. Please try again.',
-        loginTitle: 'Flower Market Billing', loginSubtitle: 'Manage your floral empire',
-        selectLanguage: 'Language', comingSoon: 'Feature coming soon!',
+        loginTitle: 'Flower Market Billing', loginSubtitle: 'Manage your flower business easily',
+        selectLanguage: 'Language', comingSoon: 'Coming Soon!',
         tenantHint: 'Hint: Try sakura/shop123, lotus/shop456, yuki/shop789',
         keyNav: '↑↓ Navigate  •  Enter Select  •  Esc Back',
         // Shared
@@ -88,15 +88,15 @@ const App = (() => {
         cancel: 'Cancel', save: 'Save', close: 'Close', register: 'Register', update: 'Update',
         date: 'Date', ledger: 'Ledger', initialDues: 'Initial Dues (₹)',
         // Module Specific
-        farmerMgmt: 'Farmer Management', absentMgmt: 'Absent Farmer',
+        farmerMgmt: 'Farmer Management', absentMgmt: 'Absent Management',
         flowerMgmt: 'Flower Management', communication: 'Communication',
-        absent: 'Absent', viewRange: 'Viewing range',
+        absent: 'Absent', viewRange: 'View Range',
         // Farmer Specific
         addFarmerBtn: '+ Add Farmer',
-        farmerNameReq: 'Farmer Name is required.',
-        contactNumReq: 'Contact Number is required.',
+        farmerNameReq: 'Farmer name is required.',
+        contactNumReq: 'Contact number is required.',
         farmerIdReq: 'Farmer ID is required.',
-        farmerIdExists: 'Flower ID already exists.',
+        farmerIdExists: 'Farmer ID already exists.',
         flowerIdExists: 'Flower ID already exists.',
         deleteConfirm: 'Are you sure you want to delete',
         deleteActionUndone: 'This action cannot be undone.',
@@ -132,13 +132,19 @@ const App = (() => {
         profile: 'Profile', shopName: 'Shop Name', shopAddress: 'Shop Address', shopPhone: 'Phone Number',
         billType: 'Variety', billWeight: 'Weight', billPrice: 'Price', billAmount: 'Amount',
         todayGoods: "Today's Goods", prevBalance: 'Previous Balance', billTotal: 'Total',
-        received: 'Received', pendingBalance: 'Balance', thanks: 'Thank You'
+        received: 'Received', pendingBalance: 'Balance', thanks: 'Thank You',
+        allTime: 'All Time', dateRange: 'Date Range', debit: 'Debit', credit: 'Credit', description: 'Description',
+        sNo: 'S.No', from: 'From', to: 'To', apply: 'Apply', noRecords: 'No records found.',
+        editCustomer: 'Edit Customer', addCustomerModal: 'Add Customer',
+        deleteCustomerConfirm: 'Are you sure you want to delete this customer?',
+        openingBalance: 'Opening Balance', totalDebit: 'Total Debit', totalCredit: 'Total Credit',
+        purchaseBill: 'Purchase Bill', salesBill: 'Sales Bill'
       },
       ta: {
         login: 'உள்நுழை', username: 'பயனர்பெயர்', password: 'கடவுச்சொல்',
         farmer: 'விவசாயி', sales: 'விற்பனை', exit: 'வெளியேறு',
         addFarmer: 'விவசாயி', absentFarmer: 'வராத விவசாயி',
-        flower: 'பூ', purchase: 'கொள்முதல்', cashPay: 'பண கட்டணம்',
+        flower: 'பூ', purchase: 'கொள்முதல்', cashPay: 'பணமுறை',
         expenses: 'செலவுகள்', dayAccount: 'நாள் கணக்கு', monthAccount: 'மாத கணக்கு',
         customer: 'வாடிக்கையாளர்', cashReceive: 'பண முறை',
         customerReport: 'வாடிக்கையாளர் அறிக்கை', back: 'பின்செல்',
@@ -177,7 +183,7 @@ const App = (() => {
         netAmount: 'மொத்தம்',
         noPurchases: 'இன்று கொள்முதல் ஏதும் இல்லை.', newPurchaseEntry: 'புதிய கொள்முதல் பதிவு',
         selectFarmer: 'விவசாயியைத் தேர்ந்தெடுக்கவும்', selectFlower: 'பூவைத் தேர்ந்தெடுக்கவும்', savePurchase: 'கொள்முதலைச் சேமி',
-        customerMaster: 'வாடிக்கையாளர் பட்டியல்', addCustomer: 'வாடிக்கையாளரைச் சேர்', creditLimit: 'கடன் வரம்பு', currentDues: 'நடப்பு நிலுவை',
+        customerMaster: 'வாடிக்கையாளர் பட்டியல்', addCustomer: 'வாடிக்கையாளரைச் சேர்', creditLimit: 'கடன வரம்பு', currentDues: 'நடப்பு நிலுவை',
         invNo: 'விலைப்பட்டியல் எண்', totalAmount: 'மொத்த தொகை', noSales: 'விற்பனை ஏதும் இல்லை.', generateInvoice: 'விலைப்பட்டியல் உருவாக்கு',
         batchId: 'தொகுப்பு ஐடி', flowerType: 'பூ வகை', totalFlowerCost: 'மொத்த பூ செலவு', outstanding: 'நிலுவை', balanceAmount: 'நிச்சய நிலுவைத் தொகை',
         directCustomer: 'நேரடி வாடிக்கையாளர்', saleDate: 'விற்பனை தேதி', flowerVariety: 'மலர் வகை', weightQty: 'எடை / அளவு', submitSales: 'விற்பனையைச் சமர்ப்பிக்கவும்',
@@ -201,7 +207,13 @@ const App = (() => {
         profile: 'சுயவிவரம்', shopName: 'கடை பெயர்', shopAddress: 'கடை முகவரி', shopPhone: 'தொலைபேசி எண்',
         billType: 'வகை', billWeight: 'எடை', billPrice: 'விலை', billAmount: 'தொகை',
         todayGoods: 'இன்றைய சரக்கு', prevBalance: 'முன் பாக்கி', billTotal: 'மொத்தம்',
-        received: 'வரவு', pendingBalance: 'பாக்கி', thanks: '🌸 நன்றி 🌸'
+        received: 'வரவு', pendingBalance: 'பாக்கி', thanks: '🌸 நன்றி 🌸',
+        allTime: 'எல்லா காலமும்', dateRange: 'தேதி வரம்பு', description: 'விளக்கம்',
+        from: 'முதல்', to: 'வரை', apply: 'விண்ணப்பிக்கவும்', noRecords: 'பதிவுகள் எதுவும் இல்லை.',
+        editCustomer: 'வாடிக்கையாளரைத் திருத்து', addCustomerModal: 'வாடிக்கையாளரைச் சேர்',
+        deleteCustomerConfirm: 'இந்த வாடிக்கையாளரை அழிக்க விரும்புகிறீர்களா?',
+        openingBalance: 'தொடக்க இருப்பு', totalDebit: 'மொத்த பற்று', totalCredit: 'மொத்த வரவு',
+        purchaseBill: 'கொள்முதல் ரசீது', salesBill: 'விற்பனை ரசீது'
       }
     },
     t(key) { return this.strings[this.lang][key] || key; },
@@ -280,8 +292,6 @@ const App = (() => {
     }
   }
 
-
-
   // ── LOGIN PAGE ─────────────────────────────────────────────────────────────
   function renderLogin() {
     const page = el('div', 'page page-login');
@@ -335,7 +345,6 @@ const App = (() => {
     page.appendChild(card);
 
     // ── Login Keyboard Nav ──
-    // Tab naturally works. Enter on button submits. Arrow keys move between fields.
     setTimeout(() => {
       const userInput = document.getElementById('inp-user');
       if (userInput) userInput.focus();
@@ -446,7 +455,7 @@ const App = (() => {
     ], '🌿', i18n.t('farmer'));
   }
 
-  // ── SALES SECTION ── (no "Back" item in sidebar — only top bar has it) ─────
+  // ── SALES SECTION ──────────────────────────────────────────────────────────
   function renderSales() {
     return renderSectionPage('sales', [
       { icon: '🧑‍💼', key: 'customer' },
@@ -461,7 +470,8 @@ const App = (() => {
     const page = el('div', 'page page-section');
     addPetals(page);
 
-    let isDashboard = true; // Start with the Dashboard Grid
+    let isDashboard = true; 
+    let activeSidebarIdx = 0;
 
     function renderActiveLayout() {
       page.innerHTML = '';
@@ -524,7 +534,6 @@ const App = (() => {
       });
       page.appendChild(grid);
 
-      // Focus management
       setTimeout(() => {
         grid.querySelectorAll('.fm-dashboard-card')[activeSidebarIdx]?.focus();
       }, 100);
@@ -532,22 +541,17 @@ const App = (() => {
 
     function renderFullLayout() {
       const layout = el('div', 'section-layout layout-focused');
-
-      // Content Panel
       const content = el('div', 'content-panel glass-card');
       content.id = 'content-panel';
       updateContentPanel(items[activeSidebarIdx], content);
       layout.appendChild(content);
-
       page.appendChild(layout);
 
-      // Focus management
       setTimeout(() => {
         document.getElementById('content-panel')?.focus();
       }, 100);
     }
 
-    // ── Section Keyboard Nav ──
     page.addEventListener('keydown', e => {
       const isCard = document.activeElement?.classList.contains('fm-dashboard-card');
 
@@ -561,7 +565,6 @@ const App = (() => {
         return;
       }
 
-      // Numeric shortcuts 1-8 (Ignore if user is typing in an input)
       const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
       const num = parseInt(e.key);
       if (!isInput && !isNaN(num) && num >= 1 && num <= items.length) {
@@ -573,7 +576,6 @@ const App = (() => {
       }
 
       if (isDashboard && isCard) {
-        // Dashboard arrows
         const cols = window.innerWidth > 1000 ? 3 : window.innerWidth > 600 ? 2 : 1;
         let next = activeSidebarIdx;
         if (e.key === 'ArrowRight') next = Math.min(items.length - 1, activeSidebarIdx + 1);
@@ -596,18 +598,14 @@ const App = (() => {
       }
     });
 
-    let activeSidebarIdx = 0;
     renderActiveLayout();
-
     return page;
   }
-
 
   function updateContentPanel(item, panel) {
     const cp = panel || document.getElementById('content-panel');
     if (!cp) return;
 
-    // ── Route Farmer module ──
     if (currentPage === 'farmer') {
       if (item.key === 'addFarmer')      { FarmerModule.render(cp, DB); return; }
       if (item.key === 'absentFarmer')   { AbsentFarmerModule.init(cp, DB); return; }
@@ -619,16 +617,13 @@ const App = (() => {
       if (item.key === 'monthAccount')   { AccountsModule.init(cp, DB, 'month'); return; }
     }
 
-    // ── Route Sales module ──
     if (currentPage === 'sales') {
       if (item.key === 'customer')       { CustomerModule.init(cp, DB); return; }
       if (item.key === 'cashReceive')    { CashReceiveModule.init(cp, DB); return; }
       if (item.key === 'sales')          { SalesModule.init(cp, DB); return; }
       if (item.key === 'customerReport') { CustomerReportModule.init(cp, DB); return; }
-      if (item.key === 'salesReport')    { SalesReportModule.init(cp, DB); return; }
     }
 
-    // ── Default: Coming Soon ──
     cp.setAttribute('tabindex', '0');
     cp.innerHTML = `
       <div class="content-header">
@@ -748,9 +743,8 @@ const App = (() => {
     const isTa = i18n.lang === 'ta';
     const profile = getProfile();
     const win = window.open('', '_blank');
-    const today = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
+    const today = new Date().toLocaleDateString('en-GB'); 
     
-    // Calculate totals
     const itemsTotal = data.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     const balance = parseFloat(data.balance) || 0;
     const received = parseFloat(data.received) || 0;
@@ -763,85 +757,39 @@ const App = (() => {
         <title>Bill - ${data.customerName}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          
-          /* Hide browser headers/footers */
           @page { size: auto; margin: 0mm; }
-          
           body { 
             font-family: 'Nunito', sans-serif; 
-            padding: 0; 
-            margin: 0; 
-            color: #000; 
-            font-size: 14px; 
-            background: #fff; 
+            padding: 0; margin: 0; color: #000; font-size: 14px; background: #fff; 
             -webkit-print-color-adjust: exact;
           }
-          
-          .print-area {
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
-          }
-
-          .bill-wrap { 
-            width: 400px; 
-            background: white;
-            padding: 20px;
-          }
-
+          .print-area { display: flex; justify-content: center; padding: 40px 20px; }
+          .bill-wrap { width: 400px; background: white; padding: 20px; }
           @media screen {
             body { background: #f1f5f9; }
-            .bill-wrap { 
-              margin-top: 20px;
-              box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-              border-radius: 8px;
-            }
+            .bill-wrap { margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; }
           }
-
           .header { text-align: center; margin-bottom: 25px; }
           .biz-name { font-size: 28px; font-weight: 900; margin: 0; letter-spacing: 0.5px; color: #000; text-transform: uppercase; }
           .biz-addr { font-size: 13px; margin: 5px 0; line-height: 1.5; color: #333; font-weight: 700; white-space: pre-line; }
           .biz-ph { font-size: 14px; font-weight: 900; margin-top: 10px; }
-          
           .cust-row { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 30px; }
           .cust-name { font-size: 22px; font-weight: 900; color: #000; }
           .date { font-size: 14px; font-weight: 700; color: #333; margin-top: 5px; }
-          
           .divider-dashed { border-top: 1.5px dashed #000; margin: 15px 0; }
           .divider-solid { border-top: 2px solid #000; margin: 15px 0; }
-          
           table { width: 100%; border-collapse: collapse; margin: 20px 0; table-layout: fixed; }
           th { border-bottom: 2.5px solid #000; padding: 10px 0; text-align: left; font-size: 13px; text-transform: uppercase; font-weight: 900; }
           td { padding: 12px 0; border-bottom: 1px solid #eee; font-weight: 700; font-size: 14px; word-wrap: break-word; }
-          
           .col-variety { width: 40%; }
           .col-qty { width: 20%; text-align: right; }
           .col-rate { width: 20%; text-align: right; }
           .col-total { width: 20%; text-align: right; }
-
           .t-right { text-align: right; }
-          
           .summary-section { margin-top: 15px; }
           .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: 800; font-size: 16px; }
-          .total-big { 
-            font-size: 19px; 
-            color: #000; 
-            border-top: 3px solid #000; 
-            padding-top: 12px; 
-            margin-top: 10px;
-            font-weight: 900;
-          }
-          
-          .footer { 
-            text-align: center; 
-            margin-top: 50px; 
-            font-size: 22px; 
-            font-weight: 900; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 12px; 
-          }
+          .total-big { font-size: 19px; color: #000; border-top: 3px solid #000; padding-top: 12px; margin-top: 10px; font-weight: 900; }
+          .footer { text-align: center; margin-top: 50px; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 12px; }
           .petal-icon { color: #f472b6; }
         </style>
       </head>
@@ -853,14 +801,11 @@ const App = (() => {
               ${(isTa && profile.addressTa) ? `<p class="biz-addr">${profile.addressTa}</p>` : (profile.address ? `<p class="biz-addr">${profile.address}</p>` : '')}
               ${profile.phone ? `<p class="biz-ph">Ph: ${profile.phone}</p>` : ''}
             </div>
-            
             <div class="cust-row">
               <div class="cust-name">${data.customerName}</div>
             </div>
             <div class="date">${isTa ? 'தேதி' : 'Date'} : ${data.date || today}</div>
-            
             <div class="divider-dashed"></div>
-            
             <table>
               <thead>
                 <tr>
@@ -881,7 +826,6 @@ const App = (() => {
                 `).join('')}
               </tbody>
             </table>
-            
             <div class="summary-section">
               <div class="summary-row">
                 <span>${isTa ? 'இன்றைய சரக்கு' : "Today's Total"}</span>
@@ -905,7 +849,6 @@ const App = (() => {
                 <span>₹${balance.toLocaleString()}</span>
               </div>
             </div>
-            
             <div class="footer">
               <span class="petal-icon">🌸</span>
               <span>${isTa ? 'நன்றி' : 'Thank You'}</span>
@@ -943,24 +886,18 @@ const App = (() => {
   });
 
   function init() {
-    // Restore session from sessionStorage on page load / refresh
     if (DB.restoreSession()) {
       const savedPage = sessionStorage.getItem('fmb_page') || 'main';
       currentPage = savedPage;
     }
 
-    // Global Keyboard Handler
     window.addEventListener('keydown', e => {
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
-      
-      // Global Search Shortcut (/ or F1) - if not typing in an input
       if (!isInput && (e.key === '/' || e.key === 'F1')) {
         e.preventDefault();
         const searchBox = document.querySelector('input[id*="search"], input[id*="rep-search"], input[id*="c-search"]');
         if (searchBox) searchBox.focus();
       }
-
-      // Close Modals (Esc)
       if (e.key === 'Escape') {
         const modalOverlay = document.querySelector('.fm-overlay, .fm-modal-overlay');
         if (modalOverlay) modalOverlay.remove();
