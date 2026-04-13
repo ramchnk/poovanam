@@ -1,82 +1,156 @@
-
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flower2 } from 'lucide-react';
 import { LangContext } from '../components/Layout';
 
-const SalesMenu = () => {
-    const navigate = useNavigate();
-    const { t, lang } = useContext(LangContext);
+const MENU_ITEMS = [
+    {
+        emoji: '🧑',
+        labelKey: 'customer',
+        color: { border: '#16a34a', text: '#16a34a', bg: '#f0fdf4', glow: 'rgba(22,163,74,0.15)' },
+        route: '/app/buyer',
+    },
+    {
+        emoji: '💰',
+        labelKey: 'cashReceive',
+        color: { border: '#7c3aed', text: '#7c3aed', bg: '#faf5ff', glow: 'rgba(124,58,237,0.15)' },
+        route: '/app/payments',
+    },
+    {
+        emoji: '🧾',
+        labelKey: 'sales',
+        color: { border: '#2563eb', text: '#2563eb', bg: '#eff6ff', glow: 'rgba(37,99,235,0.15)' },
+        route: '/app/sales-entry',
+    },
+    {
+        emoji: '📈',
+        labelKey: 'reports',
+        color: { border: '#d97706', text: '#d97706', bg: '#fffbeb', glow: 'rgba(217,119,6,0.15)' },
+        route: '/app/reports',
+    },
+    {
+        emoji: '🌸',
+        labelKey: 'flowers',
+        color: { border: '#db2777', text: '#db2777', bg: '#fdf2f8', glow: 'rgba(219,39,119,0.15)' },
+        route: '/app/flowers',
+    },
+];
 
-    const MenuCard = ({ emoji, label, colorClass, icon: Icon, onClick }) => (
-        <button 
+const CARD_W = 260; // fixed card width in px
+
+const MenuCard = ({ emoji, label, color, onClick, delay }) => {
+    const [hovered, setHovered] = React.useState(false);
+    return (
+        <button
             onClick={onClick}
-            className={`group relative flex items-center gap-8 p-3 pr-14 bg-white border-2 rounded-full transition-all hover:scale-[1.05] active:scale-95 shadow-xl border-opacity-60 hover:shadow-2xl ${colorClass}`}
-            style={{ minWidth: '420px' }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '18px 24px',
+                background: hovered ? color.bg : '#ffffff',
+                border: `2.5px solid ${color.border}`,
+                borderRadius: '18px',
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                transform: hovered ? 'translateY(-4px) scale(1.03)' : 'translateY(0) scale(1)',
+                boxShadow: hovered
+                    ? `0 12px 32px ${color.glow}, 0 2px 8px rgba(0,0,0,0.06)`
+                    : '0 2px 8px rgba(0,0,0,0.04)',
+                width: `${CARD_W}px`,
+                outline: 'none',
+                fontFamily: 'var(--font-display)',
+                animationDelay: delay,
+                flexShrink: 0,
+            }}
         >
-            {/* Outer Glow / Double Border */}
-            <div className={`absolute inset-[-6px] border-2 rounded-[999px] opacity-20 group-hover:opacity-100 transition-opacity pointer-events-none ${colorClass}`} />
-            
-            {/* Icon Wrapper (Matches screenshot white square with rounded corners) */}
-            <div className="w-20 h-20 flex items-center justify-center bg-gray-50/80 rounded-3xl border border-gray-100 shadow-sm transition-transform group-hover:rotate-6 group-hover:scale-110">
-                 <span className="text-4xl filter drop-shadow-md">{emoji}</span>
+            {/* Icon */}
+            <div style={{
+                width: '60px', height: '60px', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: hovered ? '#ffffff' : '#f8fafc',
+                border: '1px solid #e2e8f0', borderRadius: '12px',
+                transition: 'all 0.25s',
+                transform: hovered ? 'rotate(6deg) scale(1.08)' : 'none',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            }}>
+                <span style={{ fontSize: '32px', lineHeight: 1 }}>{emoji}</span>
             </div>
-            
-            <span className={`text-3xl font-black tracking-tighter ${colorClass.replace('border-', 'text-')} group-hover:brightness-90 font-heading`}>
+
+            {/* Label — nowrap prevents wrapping */}
+            <span style={{
+                fontSize: '20px',
+                fontWeight: 800,
+                color: color.text,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+            }}>
                 {label}
             </span>
         </button>
     );
+};
+
+const SalesMenu = () => {
+    const navigate = useNavigate();
+    const { t } = useContext(LangContext);
+
+    // Split into rows: 3 on top, 2 centered on bottom
+    const row1 = MENU_ITEMS.slice(0, 3);
+    const row2 = MENU_ITEMS.slice(3);
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-ethereal">
-            {/* Beautiful Anime Decorations */}
-            <div className="absolute top-[10%] left-[5%] text-4xl animate-float opacity-30 pointer-events-none">🌸</div>
-            <div className="absolute top-[30%] right-[8%] text-5xl animate-drift opacity-20 pointer-events-none stagger-2">🌸</div>
-            <div className="absolute bottom-[20%] left-[12%] text-3xl animate-float opacity-40 pointer-events-none stagger-3">🌼</div>
-            <div className="absolute bottom-[40%] right-[15%] text-4xl animate-drift opacity-10 pointer-events-none stagger-1">🌸</div>
-            <div className="absolute top-[60%] left-[25%] text-2xl animate-float opacity-15 pointer-events-none stagger-4">🌺</div>
-            <div className="absolute top-[5%] right-[30%] text-6xl animate-drift opacity-5 pointer-events-none">✨</div>
-            <div className="absolute top-[60%] right-[20%] opacity-10 rotate-12 text-yellow-400">🌼</div>
+        <div style={{
+            minHeight: '80vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+        }}>
+            {/* Background blobs */}
+            <div style={{ position:'absolute', top:'5%', left:'10%', width:'300px', height:'300px', background:'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
+            <div style={{ position:'absolute', bottom:'10%', right:'10%', width:'350px', height:'350px', background:'radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
 
-            {/* Menu Grid - Expanded for Full Screen */}
-            <div className="relative z-10 w-full px-12 py-20 flex flex-col items-center justify-center min-h-[70vh]">
-                <div className="flex flex-wrap gap-12 justify-center max-w-[1600px] w-full items-center">
-                    <div className="opacity-0 animate-entry stagger-1">
-                        <MenuCard 
-                            emoji="🧒" 
-                            label={t('customer')} 
-                            colorClass="border-emerald-500"
-                            onClick={() => navigate('/app/buyer')}
-                        />
-                    </div>
-                    
-                    <div className="opacity-0 animate-entry stagger-2">
-                        <MenuCard 
-                            emoji="💰" 
-                            label={t('cashReceive')} 
-                            colorClass="border-indigo-400"
-                            onClick={() => navigate('/app/payments')}
-                        />
-                    </div>
+            {/* Floating emojis */}
+            <div className="animate-float" style={{position:'absolute',top:'12%',left:'6%',fontSize:'28px',opacity:0.25,pointerEvents:'none'}}>🌸</div>
+            <div className="animate-drift" style={{position:'absolute',top:'25%',right:'8%',fontSize:'36px',opacity:0.12,pointerEvents:'none',animationDelay:'1.5s'}}>🌸</div>
+            <div className="animate-float" style={{position:'absolute',bottom:'25%',left:'14%',fontSize:'22px',opacity:0.3,pointerEvents:'none',animationDelay:'0.8s'}}>🌼</div>
+            <div className="animate-drift" style={{position:'absolute',bottom:'38%',right:'16%',fontSize:'28px',opacity:0.1,pointerEvents:'none',animationDelay:'2s'}}>🌺</div>
 
-                    <div className="opacity-0 animate-entry stagger-3">
-                        <MenuCard 
-                            emoji="🧾" 
-                            label={t('sales')} 
-                            colorClass="border-teal-700"
-                            onClick={() => navigate('/app/sales-entry')}
-                        />
-                    </div>
+            {/* Cards — two rows, manually centered */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', position: 'relative', zIndex: 10, padding: '16px' }}>
+                {/* Row 1: 3 cards */}
+                <div style={{ display: 'flex', gap: '18px', flexWrap: 'nowrap' }}>
+                    {row1.map((item, i) => (
+                        <div key={item.labelKey} className="animate-in fade-in" style={{ animationDelay: `${i * 0.08}s`, animationDuration: '0.4s' }}>
+                            <MenuCard
+                                emoji={item.emoji}
+                                label={t(item.labelKey)}
+                                color={item.color}
+                                onClick={() => navigate(item.route)}
+                                delay={`${i * 0.08}s`}
+                            />
+                        </div>
+                    ))}
+                </div>
 
-                    <div className="opacity-0 animate-entry stagger-4">
-                        <MenuCard 
-                            emoji="📊" 
-                            label={t('reports')} 
-                            colorClass="border-orange-500"
-                            onClick={() => navigate('/app/reports')}
-                        />
-                    </div>
+                {/* Row 2: remaining cards centered */}
+                <div style={{ display: 'flex', gap: '18px', flexWrap: 'nowrap', justifyContent: 'center' }}>
+                    {row2.map((item, i) => (
+                        <div key={item.labelKey} className="animate-in fade-in" style={{ animationDelay: `${(i + 3) * 0.08}s`, animationDuration: '0.4s' }}>
+                            <MenuCard
+                                emoji={item.emoji}
+                                label={t(item.labelKey)}
+                                color={item.color}
+                                onClick={() => navigate(item.route)}
+                                delay={`${(i + 3) * 0.08}s`}
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
@@ -84,4 +158,3 @@ const SalesMenu = () => {
 };
 
 export default SalesMenu;
-

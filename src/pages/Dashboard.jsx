@@ -37,6 +37,7 @@ const Dashboard = () => {
                 <button onClick={() => navigate('/app/accounts')} className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-emerald-600">Audit Accounts</button>
                 <button onClick={() => navigate('/app/buyer')} className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-emerald-600">Customer Directory</button>
                 <button onClick={() => navigate('/app/products')} className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-emerald-600">Product Master</button>
+                <button onClick={() => navigate('/app/settings')} className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-emerald-600">⚙️ Settings</button>
             </div>
         </div>
     );

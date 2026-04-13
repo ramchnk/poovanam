@@ -1,41 +1,46 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import { Search, BarChart3, MessageCircle, ChevronRight, TrendingUp, Download, X, User } from 'lucide-react';
+import { Search, MessageCircle, BarChart2, X, User, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { subscribeToCollection } from '../utils/storage';
+import { subscribeToCollection, db } from '../utils/storage';
+import { doc, getDoc } from 'firebase/firestore';
 import { LangContext } from '../components/Layout';
+import { generateBuyerReceiptCanvas } from '../utils/receiptCanvas';
 
 const fmt = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n || 0);
 
 const toDateStr = (d) => {
-    // Returns YYYY-MM-DD in local time
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
 };
 
-const displayDate = (iso) => {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
-};
-
 const Reports = () => {
     const { t } = useContext(LangContext);
     const today = toDateStr(new Date());
 
-    const [sales, setSales]   = useState([]);
-    const [buyers, setBuyers] = useState([]);
+    const [sales, setSales]       = useState([]);
+    const [buyers, setBuyers]     = useState([]);
     const [payments, setPayments] = useState([]);
 
-    const [fromDate, setFromDate] = useState(today);
-    const [toDate,   setToDate]   = useState(today);
-    const [appliedFrom, setAppliedFrom] = useState(today);
-    const [appliedTo,   setAppliedTo]   = useState(today);
-    const [search, setSearch] = useState('');
+    const [fromDate, setFromDate]         = useState(today);
+    const [toDate, setToDate]             = useState(today);
+    const [appliedFrom, setAppliedFrom]   = useState(today);
+    const [appliedTo, setAppliedTo]       = useState(today);
+    const [search, setSearch]             = useState('');
     const [activePreset, setActivePreset] = useState('today');
-    const [detailBuyer, setDetailBuyer] = useState(null);
+    const [detailBuyer, setDetailBuyer]     = useState(null);
+    const [isDownloading, setIsDownloading]  = useState(false);
+    const [sharingRowId, setSharingRowId]    = useState(null);
+    const [bizInfo, setBizInfo]              = useState({ name: 'Poovanam Market', type: 'Flower Business', address: '', phones: '' });
+
+    // Load business info once
+    useEffect(() => {
+        getDoc(doc(db, 'system', 'settings')).then(snap => {
+            if (snap.exists()) setBizInfo(d => ({ ...d, ...snap.data() }));
+        }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         const u1 = subscribeToCollection('sales',    setSales);
@@ -44,463 +49,399 @@ const Reports = () => {
         return () => { u1(); u2(); u3(); };
     }, []);
 
-    /* ── Date preset helpers ── */
     const applyPreset = (preset) => {
         const now = new Date();
-        let f = toDateStr(now);
-        let t = toDateStr(now);
+        let f = toDateStr(now), to = toDateStr(now);
         if (preset === 'month') {
-            f = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
-            t = toDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+            f  = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+            to = toDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
         }
-        setFromDate(f); setToDate(t);
-        setAppliedFrom(f); setAppliedTo(t);
+        setFromDate(f); setToDate(to);
+        setAppliedFrom(f); setAppliedTo(to);
         setActivePreset(preset);
     };
 
-    const handleApply = () => {
-        setAppliedFrom(fromDate);
-        setAppliedTo(toDate);
-    };
+    const handleApply = () => { setAppliedFrom(fromDate); setAppliedTo(toDate); };
 
-    /* ── Build per-buyer summary ── */
     const report = useMemo(() => {
-        // Filter sales by date range
         const filteredSales = sales.filter(s => {
             const d = s.date || (s.timestamp?.toDate ? toDateStr(s.timestamp.toDate()) : null);
-            if (!d) return false;
-            return d >= appliedFrom && d <= appliedTo;
+            return d && d >= appliedFrom && d <= appliedTo;
         });
-
-        // Filter payments by date range
         const filteredPayments = payments.filter(p => {
             const d = p.timestamp
-                ? (typeof p.timestamp === 'string'
-                    ? p.timestamp.substring(0, 10)
+                ? (typeof p.timestamp === 'string' ? p.timestamp.substring(0, 10)
                     : toDateStr(p.timestamp.toDate ? p.timestamp.toDate() : new Date(p.timestamp)))
                 : null;
-            if (!d) return false;
-            return d >= appliedFrom && d <= appliedTo && p.type === 'buyer';
+            return d && d >= appliedFrom && d <= appliedTo && p.type === 'buyer';
         });
 
-        // Group sales by buyerId
-        const salesByBuyer = {};
-        filteredSales.forEach(s => {
-            if (!salesByBuyer[s.buyerId]) salesByBuyer[s.buyerId] = 0;
-            salesByBuyer[s.buyerId] += s.grandTotal || 0;
-        });
+        const salesByBuyer = {}, paidByBuyer = {};
+        filteredSales.forEach(s => { salesByBuyer[s.buyerId] = (salesByBuyer[s.buyerId] || 0) + (s.grandTotal || 0); });
+        filteredPayments.forEach(p => { paidByBuyer[p.entityId] = (paidByBuyer[p.entityId] || 0) + (p.amount || 0); });
 
-        // Group payments by buyerId
-        const paidByBuyer = {};
-        filteredPayments.forEach(p => {
-            if (!paidByBuyer[p.entityId]) paidByBuyer[p.entityId] = 0;
-            paidByBuyer[p.entityId] += p.amount || 0;
-        });
-
-        // Merge with buyers list
-        const allBuyerIds = new Set([
-            ...Object.keys(salesByBuyer),
-            ...Object.keys(paidByBuyer)
-        ]);
-
+        const allIds = new Set([...Object.keys(salesByBuyer), ...Object.keys(paidByBuyer)]);
         const rows = [];
-        allBuyerIds.forEach(id => {
+        allIds.forEach(id => {
             const buyer = buyers.find(b => b.id === id);
             const salesAmt = salesByBuyer[id] || 0;
             const paidAmt  = paidByBuyer[id]  || 0;
-            const balance  = buyer?.balance ?? (salesAmt - paidAmt);
-            rows.push({
-                id,
-                name: buyer?.name || 'Unknown',
-                displayId: buyer?.displayId || '---',
-                sales: salesAmt,
-                paid: paidAmt,
-                balance,
-            });
+            rows.push({ id, name: buyer?.name || 'Unknown', displayId: buyer?.displayId || '---', sales: salesAmt, paid: paidAmt, balance: buyer?.balance ?? (salesAmt - paidAmt) });
         });
-
         return rows.sort((a, b) => b.sales - a.sales);
     }, [sales, payments, buyers, appliedFrom, appliedTo]);
 
-    /* ── Summary totals ── */
-    const totalSales   = report.reduce((s, r) => s + r.sales, 0);
-    const totalPaid    = report.reduce((s, r) => s + r.paid, 0);
-    const totalNet     = totalSales - totalPaid;
-    const totalDues    = report.reduce((s, r) => s + Math.max(0, r.balance), 0);
+    const totalSales = report.reduce((s, r) => s + r.sales, 0);
+    const totalPaid  = report.reduce((s, r) => s + r.paid, 0);
+    const totalNet   = totalSales - totalPaid;
+    const totalDues  = report.reduce((s, r) => s + Math.max(0, r.balance), 0);
 
-    /* ── Filtered rows ── */
     const filtered = report.filter(r =>
-        r.name.toLowerCase().includes(search.toLowerCase()) || 
-        r.displayId.toString().toLowerCase().includes(search.toLowerCase())
+        r.name.toLowerCase().includes(search.toLowerCase()) ||
+        r.displayId.toString().includes(search)
     );
 
-    /* ── Detail Data for Modal ── */
     const detailTransactions = useMemo(() => {
         if (!detailBuyer) return [];
-        
         const res = [];
-        // Sales
         sales.filter(s => s.buyerId === detailBuyer.id).forEach(s => {
-            const d = s.date || (s.timestamp?.toDate ? toDateStr(s.timestamp.toDate()) : '---');
-            if (d >= appliedFrom && d <= appliedTo) {
-                res.push({ date: d, type: 'SALE', amount: s.grandTotal || 0 });
-            }
+            const d = s.date || (s.timestamp?.toDate ? toDateStr(s.timestamp.toDate()) : null);
+            if (d && d >= appliedFrom && d <= appliedTo) res.push({ date: d, type: 'SALE', amount: s.grandTotal || 0 });
         });
-        // Payments
         payments.filter(p => p.entityId === detailBuyer.id && p.type === 'buyer').forEach(p => {
             const d = p.timestamp
-                ? (typeof p.timestamp === 'string'
-                    ? p.timestamp.substring(0, 10)
+                ? (typeof p.timestamp === 'string' ? p.timestamp.substring(0, 10)
                     : toDateStr(p.timestamp.toDate ? p.timestamp.toDate() : new Date(p.timestamp)))
                 : null;
-            if (d && d >= appliedFrom && d <= appliedTo) {
-                res.push({ date: d, type: 'PAID', amount: p.amount || 0 });
-            }
+            if (d && d >= appliedFrom && d <= appliedTo) res.push({ date: d, type: 'PAID', amount: p.amount || 0 });
         });
-        
-        return res.sort((a,b) => b.date.localeCompare(a.date));
+        return res.sort((a, b) => b.date.localeCompare(a.date));
     }, [detailBuyer, sales, payments, appliedFrom, appliedTo]);
 
-    /* ── Styles ── */
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [downloadUrl, setDownloadUrl] = useState(null);
-
-    const handleDownloadXLSX = async () => {
-        if (report.length === 0) {
-            alert("No data available to download.");
-            return;
-        }
-
-        setIsDownloading(true);
-        setDownloadUrl(null);
+    // ── Per-row WhatsApp receipt share ──
+    const handleShareRow = async (row) => {
+        setSharingRowId(row.id);
         try {
-            await new Promise(r => setTimeout(r, 600));
+            // Gather flat sales items for this buyer in applied period
+            const buyerSales = sales.filter(s => {
+                if (s.buyerId !== row.id) return false;
+                const d = s.date || (s.timestamp?.toDate ? toDateStr(s.timestamp.toDate()) : null);
+                return d && d >= appliedFrom && d <= appliedTo;
+            });
+            const flatItems = buyerSales.flatMap(s => s.items || []);
 
-            const data = report.map(r => ({
-                'ID': r.displayId,
-                'Customer_Name': r.name,
-                'Total_Sales': r.sales,
-                'Total_Paid': r.paid,
-                'Balance': r.balance
-            }));
+            // Payments in period
+            const buyerPayments = payments.filter(p => {
+                if (p.entityId !== row.id || p.type !== 'buyer') return false;
+                const d = p.timestamp
+                    ? (typeof p.timestamp === 'string' ? p.timestamp.substring(0, 10)
+                        : toDateStr(p.timestamp.toDate ? p.timestamp.toDate() : new Date(p.timestamp)))
+                    : null;
+                return d && d >= appliedFrom && d <= appliedTo;
+            });
+            const paymentsTotal  = buyerPayments.reduce((s, p) => s + (p.amount || 0), 0);
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Sales_Report");
+            // prevBalance = current DB balance - sales + payments (reverse the period)
+            const buyer = buyers.find(b => b.id === row.id);
+            const prevBalance = (buyer?.balance || 0) - row.sales + paymentsTotal;
 
-            // Generate the file as a buffer
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = URL.createObjectURL(blob);
-            
-            // Set the URL so the user can click it if the auto-trigger fails
-            setDownloadUrl({
-                url,
-                name: `Report_${appliedFrom}_to_${appliedTo}.xlsx`
+            const { blob, url } = await generateBuyerReceiptCanvas({
+                buyer:         row,
+                salesItems:    flatItems,
+                salesTotal:    row.sales,
+                paymentsTotal,
+                prevBalance,
+                fromDate:      appliedFrom,
+                toDate:        appliedTo,
+                bizInfo,
             });
 
-            // Auto-trigger
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Report_${appliedFrom}_to_${appliedTo}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            // Cleanup after 30 seconds
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-                setDownloadUrl(null);
-            }, 30000);
-            
-        } catch (error) {
-            console.error(error);
-            alert("Error generating file. Please try the WhatsApp share instead.");
+            // Try native share (mobile) first, else open image
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'receipt.png', { type: 'image/png' })] })) {
+                await navigator.share({
+                    files: [new File([blob], 'receipt.png', { type: 'image/png' })],
+                    title: `Receipt – ${row.name}`,
+                });
+            } else {
+                // Fallback: open image in new tab (user can save & share manually)
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `receipt_${row.name.replace(/\s+/g,'_')}.png`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 30000);
+            }
+        } catch (err) {
+            console.error('Receipt error:', err);
+            alert('❌ Could not generate receipt: ' + err.message);
         } finally {
-            setIsDownloading(false);
+            setSharingRowId(null);
         }
     };
+
     const handleWhatsAppShare = () => {
         if (report.length === 0) return;
-        let message = `*CUSTOMER REPORT SUMMARY*\n`;
-        message += `Period: ${appliedFrom} to ${appliedTo}\n`;
-        message += `Total Sales: ${fmt(totalSales)}\n`;
-        message += `Total Paid: ${fmt(totalPaid)}\n`;
-        message += `Total Dues: ${fmt(totalDues)}\n\n`;
-        message += `Thank you!`;
-        const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        let msg = `*CUSTOMER REPORT*\nPeriod: ${appliedFrom} to ${appliedTo}\nSales: ${fmt(totalSales)}\nPaid: ${fmt(totalPaid)}\nDues: ${fmt(totalDues)}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
-    /* ── Styles ── */
-    const thCls = "text-left text-[11px] font-black text-[#1e8a44] uppercase tracking-widest pb-3";
-    const cardCls = "flex-1 min-w-[150px] rounded-xl px-5 py-4 shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:translate-y-[-2px]";
+    const handleDownloadXLSX = async () => {
+        if (report.length === 0) return alert('No data to download.');
+        setIsDownloading(true);
+        try {
+            const data = report.map(r => ({ ID: r.displayId, Customer: r.name, Sales: r.sales, Paid: r.paid, Balance: r.balance }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Report');
+            const blob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Report_${appliedFrom}_to_${appliedTo}.xlsx`;
+            a.click();
+        } catch (e) { alert('Error: ' + e.message); }
+        finally { setIsDownloading(false); }
+    };
+
+    // Style helpers (matching screenshot)
+    const S = {
+        page: { background: '#fff', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', padding: '24px 28px', minHeight: '70vh', fontFamily: 'var(--font-sans)' },
+        toolbar: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '18px' },
+        th: { padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1.5px solid #e5e7eb', whiteSpace: 'nowrap', background: '#fff' },
+        td: { padding: '12px 14px', fontSize: '14px', color: '#374151', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
+    };
+
+    const STAT_CARDS = [
+        { label: 'SALES',   value: totalSales, accent: '#3b82f6', bg: '#eff6ff', textColor: '#1d4ed8' },
+        { label: 'PAID',    value: totalPaid,  accent: '#16a34a', bg: '#f0fdf4', textColor: '#15803d' },
+        { label: 'NET',     value: totalNet,   accent: '#f97316', bg: '#fff7ed', textColor: '#c2410c' },
+        { label: 'DUES',    value: totalDues,  accent: '#ef4444', bg: '#fef2f2', textColor: '#dc2626' },
+    ];
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in duration-500">
+        <div style={S.page}>
 
-            {/* ── Toolbar Header (Matches Screenshot) ── */}
-            <div className="flex flex-wrap items-center gap-4 mb-8 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                
-                {/* Title and Icon */}
-                <div className="flex items-center gap-3 pr-4 border-r border-gray-100">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500">
-                        <TrendingUp size={22} />
+            {/* ── Toolbar ── */}
+            <div style={S.toolbar}>
+                {/* Title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>📊</span>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+                        {t('reports')}
+                    </span>
+                </div>
+
+                {/* Applied range label */}
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    {appliedFrom} To {appliedTo}
+                </span>
+
+                {/* Today / Month pills */}
+                {['today', 'month'].map(p => (
+                    <button key={p} onClick={() => applyPreset(p)} style={{
+                        padding: '5px 14px', borderRadius: '8px', border: 'none',
+                        background: activePreset === p ? '#16a34a' : '#f1f5f9',
+                        color: activePreset === p ? '#fff' : '#64748b',
+                        fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                        fontFamily: 'var(--font-sans)', transition: 'all 0.15s',
+                    }}>
+                        {p === 'today' ? t('today') : t('month')}
+                    </button>
+                ))}
+
+                {/* Date inputs */}
+                <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                    style={{ padding: '5px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '12px', fontWeight: 600, color: '#374151', outline: 'none', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+                    onFocus={e => e.target.style.borderColor = '#16a34a'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+                <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>To</span>
+                <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                    style={{ padding: '5px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '12px', fontWeight: 600, color: '#374151', outline: 'none', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+                    onFocus={e => e.target.style.borderColor = '#16a34a'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+
+                {/* Apply */}
+                <button onClick={handleApply} style={{
+                    padding: '6px 18px', borderRadius: '8px', background: '#16a34a', border: 'none',
+                    color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)',
+                }}>
+                    {t('apply')}
+                </button>
+
+                <div style={{ flex: 1 }} />
+
+                {/* WhatsApp */}
+                <button onClick={handleWhatsAppShare} title="Share on WhatsApp"
+                    style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1.5px solid #22c55e', background: '#fff', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#22c55e'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#22c55e'; }}
+                >
+                    <MessageCircle size={16} />
+                </button>
+
+                {/* Excel / Bar chart */}
+                <button onClick={handleDownloadXLSX} disabled={isDownloading} title="Download Excel"
+                    style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                >
+                    {isDownloading
+                        ? <div style={{ width: '14px', height: '14px', border: '2px solid #e2e8f0', borderTopColor: '#16a34a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        : <BarChart2 size={16} />
+                    }
+                </button>
+            </div>
+
+            {/* ── Stat Cards + Search Row ── */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+                {STAT_CARDS.map(card => (
+                    <div key={card.label} style={{ flex: 1, minWidth: '120px', borderRadius: '10px', border: `1.5px solid ${card.accent}22`, background: card.bg, padding: '12px 16px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: card.accent, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>{card.label}</div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: card.textColor }}>{fmt(card.value)}</div>
                     </div>
-                    <h2 className="text-xl font-black text-gray-800 tracking-tight">{t('reports')}</h2>
-                </div>
+                ))}
 
-                {/* Date Display */}
-                <div className="text-sm font-bold text-gray-400 px-2 min-w-[200px]">
-                    {displayDate(appliedFrom)} {t('to') || 'To'} {displayDate(appliedTo)}
-                </div>
-
-                {/* Today / Month Toggle */}
-                <div className="bg-gray-100 p-1 rounded-xl flex items-center">
-                    <button
-                        onClick={() => applyPreset('today')}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${activePreset === 'today' ? 'bg-[#10b981] text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        {t('today') || 'Today'}
-                    </button>
-                    <button
-                        onClick={() => applyPreset('month')}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${activePreset === 'month' ? 'bg-[#10b981] text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        {t('month') || 'month'}
-                    </button>
-                </div>
-
-                {/* Date Inputs */}
-                <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
-                    <input
-                        type="date"
-                        value={fromDate}
-                        onChange={e => setFromDate(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-gray-700 px-2 outline-none"
+                {/* Search */}
+                <div style={{ flex: 1.5, minWidth: '220px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '12px', color: '#9ca3af', pointerEvents: 'none' }} />
+                    <input type="text" placeholder="Search by name or ID..."
+                        value={search} onChange={e => setSearch(e.target.value)}
+                        style={{ width: '100%', padding: '10px 12px 10px 34px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '13px', color: '#374151', background: '#fff', outline: 'none', fontFamily: 'var(--font-sans)' }}
+                        onFocus={e => e.target.style.borderColor = '#16a34a'}
+                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                     />
-                    <span className="text-[10px] font-black text-gray-300 uppercase">{t('to') || 'To'}</span>
-                    <input
-                        type="date"
-                        value={toDate}
-                        onChange={e => setToDate(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-gray-700 px-2 outline-none"
-                    />
-                    <button
-                        onClick={handleApply}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg transition-all shadow-md ml-1"
-                    >
-                        {t('apply') || 'Apply'}
-                    </button>
                 </div>
+            </div>
 
-                <div className="flex-1" />
-
-                {/* Fast Actions */}
-                <div className="flex items-center gap-3">
-                {/* Fast Actions */}
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={handleWhatsAppShare}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-emerald-300 bg-white text-emerald-500 hover:bg-emerald-50 transition-all"
-                        title="Share Summary"
-                    >
-                        <MessageCircle size={20} />
-                    </button>
-                    <button 
-                        onClick={handleDownloadXLSX}
-                        disabled={isDownloading}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50"
-                        title="Download Excel"
-                    >
-                        {isDownloading ? (
-                            <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+            {/* ── Table ── */}
+            <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr>
+                            <th style={S.th}>{t('customerName')}</th>
+                            <th style={{ ...S.th, textAlign: 'right' }}>{t('sales')}</th>
+                            <th style={{ ...S.th, textAlign: 'right' }}>Paid</th>
+                            <th style={{ ...S.th, textAlign: 'right' }}>Balance</th>
+                            <th style={{ ...S.th, textAlign: 'center' }}>{t('action')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filtered.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} style={{ padding: '60px 16px', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '14px' }}>
+                                    No records found.
+                                </td>
+                            </tr>
                         ) : (
-                            <Download size={20} />
+                            filtered.map((row, idx) => (
+                                <tr key={row.id}
+                                    style={{ background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
+                                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#fafafa'}
+                                >
+                                    <td style={S.td}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px' }}>
+                                                #{row.displayId}
+                                            </span>
+                                            <span style={{ fontWeight: 600, color: '#1e293b' }}>{row.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ ...S.td, textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(row.sales)}</td>
+                                    <td style={{ ...S.td, textAlign: 'right', fontWeight: 700, color: '#15803d' }}>{fmt(row.paid)}</td>
+                                    <td style={{ ...S.td, textAlign: 'right', fontWeight: 700, color: row.balance > 0 ? '#dc2626' : '#15803d' }}>{fmt(row.balance)}</td>
+                                    <td style={{ ...S.td, textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                            {/* View detail */}
+                                            <button onClick={() => setDetailBuyer(row)}
+                                                style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '12px', fontWeight: 700, padding: '5px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-sans)' }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.color = '#fff'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.color = '#16a34a'; }}
+                                            >
+                                                View <ChevronRight size={13} />
+                                            </button>
+
+                                            {/* WhatsApp receipt share */}
+                                            <button
+                                                onClick={() => handleShareRow(row)}
+                                                disabled={sharingRowId === row.id}
+                                                title="Share receipt on WhatsApp"
+                                                style={{
+                                                    width: '32px', height: '32px', borderRadius: '8px',
+                                                    border: '1.5px solid #22c55e', background: '#fff',
+                                                    color: '#22c55e', display: 'inline-flex',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    cursor: sharingRowId === row.id ? 'not-allowed' : 'pointer',
+                                                    opacity: sharingRowId === row.id ? 0.5 : 1,
+                                                    flexShrink: 0,
+                                                }}
+                                                onMouseEnter={e => { if (sharingRowId !== row.id) { e.currentTarget.style.background='#22c55e'; e.currentTarget.style.color='#fff'; }}}
+                                                onMouseLeave={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.color='#22c55e'; }}
+                                            >
+                                                {sharingRowId === row.id
+                                                    ? <div style={{ width:'14px', height:'14px', border:'2px solid #22c55e33', borderTopColor:'#22c55e', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+                                                    : <MessageCircle size={14} />
+                                                }
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
                         )}
-                    </button>
-                </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
 
-            {/* ── Summary stat cards (Matches Screenshot) ── */}
-            <div className="flex gap-4 mb-8 flex-wrap items-stretch">
-                <div className={`${cardCls} bg-[#f0f9ff]/50 border-l-[6px] border-l-blue-500`}>
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">{t('sales')}</p>
-                    <p className="text-xl font-black text-gray-800">{fmt(totalSales)}</p>
-                </div>
-                <div className={`${cardCls} bg-[#f0fdf4]/50 border-l-[6px] border-l-emerald-500`}>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">{t('paid') || 'Paid'}</p>
-                    <p className="text-xl font-black text-gray-800">{fmt(totalPaid)}</p>
-                </div>
-                <div className={`${cardCls} bg-[#fff7ed]/50 border-l-[6px] border-l-orange-500`}>
-                    <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">{t('net') || 'Net'}</p>
-                    <p className="text-xl font-black text-gray-800">{fmt(totalNet)}</p>
-                </div>
-                <div className={`${cardCls} bg-[#fef2f2]/50 border-l-[6px] border-l-red-500`}>
-                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">{t('dues') || 'Dues'}</p>
-                    <p className="text-xl font-black text-gray-800">{fmt(totalDues)}</p>
-                </div>
-
-                {/* Search Container */}
-                <div className="flex-1 min-w-[280px] flex items-center">
-                    <div className="relative w-full">
-                        <input
-                            type="text"
-                            placeholder={t('search')}
-                            className="w-full px-6 py-3.5 border-2 border-emerald-400/30 rounded-2xl text-sm font-bold text-gray-700 bg-white outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all placeholder:text-gray-300 shadow-sm"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Download Status / Manual Link ── */}
-            {downloadUrl && (
-                <div className="mb-4 animate-in slide-in-from-top duration-300">
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                                <Download size={16} />
-                            </div>
-                            <div>
-                                <p className="text-xs font-black text-emerald-800 uppercase tracking-tighter">Report Ready</p>
-                                <p className="text-[10px] font-bold text-emerald-600/70">{downloadUrl.name}</p>
-                            </div>
-                        </div>
-                        <a 
-                            href={downloadUrl.url} 
-                            download={downloadUrl.name}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-black rounded-lg shadow-md transition-all flex items-center gap-2"
-                        >
-                            CLICK TO SAVE FILE
-                        </a>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Table (Matches Screenshot Exactly) ── */}
-            <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                {/* Table header */}
-                <div className="px-8 py-5 group-first:rounded-t-2xl border-b border-emerald-50">
-                    <div className="grid grid-cols-5 gap-6">
-                        <span className={thCls}>{t('customerName') || 'CustomerName'}</span>
-                        <span className={`${thCls} text-right`}>{t('sales') || 'Sales'}</span>
-                        <span className={`${thCls} text-right`}>{t('paid') || 'Paid'}</span>
-                        <span className={`${thCls} text-right`}>{t('balance') || 'Balance'}</span>
-                        <span className={`${thCls} text-right`}>{t('action') || 'Action'}</span>
-                    </div>
-                </div>
-
-                {/* Table body */}
-                <div className="divide-y divide-gray-50">
-                    {filtered.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-gray-300 italic font-medium">
-                            No records found.
-                        </p>
-                    ) : (
-                        filtered.map(row => (
-                            <div key={row.id} className="px-5 py-4 grid grid-cols-5 gap-4 items-center hover:bg-gray-50 transition-colors group">
-                                <span className="text-sm font-semibold text-gray-800 truncate flex items-center gap-2">
-                                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 font-black rounded text-[10px] tracking-tighter shadow-sm border border-gray-100">
-                                        #{row.displayId}
-                                    </span>
-                                    {row.name}
-                                </span>
-                                <span className="text-sm font-bold text-blue-700 text-right">{fmt(row.sales)}</span>
-                                <span className="text-sm font-bold text-emerald-600 text-right">{fmt(row.paid)}</span>
-                                <span className={`text-sm font-black text-right ${row.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                    {fmt(row.balance)}
-                                </span>
-                                <div className="flex justify-end">
-                                    <button 
-                                        onClick={() => setDetailBuyer(row)}
-                                        className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800 opacity-0 group-hover:opacity-100 transition-all"
-                                    >
-                                        View <ChevronRight size={14} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
             {/* ── Detail Modal ── */}
             {detailBuyer && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
-                        {/* Header */}
-                        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm border border-emerald-100">
-                                    <User size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-gray-800 tracking-tight">{detailBuyer.name}</h3>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pt-0.5">Customer Ledger • #{detailBuyer.displayId}</p>
-                                </div>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
+                    <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '560px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
+                        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                                <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', fontFamily: 'var(--font-display)' }}>{detailBuyer.name}</div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Customer Ledger • #{detailBuyer.displayId}</div>
                             </div>
-                            <button 
-                                onClick={() => setDetailBuyer(null)}
-                                className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all"
-                            >
-                                <X size={20} />
-                            </button>
+                            <button onClick={() => setDetailBuyer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}><X size={20} /></button>
                         </div>
 
-                        {/* Content */}
-                        <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            {/* Short Summary inside Modal */}
-                            <div className="grid grid-cols-3 gap-4 mb-8">
-                                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-                                    <p className="text-[9px] font-black text-blue-500 uppercase mb-1 tracking-widest">Sales</p>
-                                    <p className="text-sm font-black text-gray-800">{fmt(detailBuyer.sales)}</p>
+                        {/* Mini summary */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', padding: '16px 24px 0' }}>
+                            {[{ l: 'Sales', v: detailBuyer.sales, c: '#1d4ed8', bg: '#eff6ff' }, { l: 'Paid', v: detailBuyer.paid, c: '#15803d', bg: '#f0fdf4' }, { l: 'Balance', v: detailBuyer.balance, c: '#dc2626', bg: '#fef2f2' }].map(x => (
+                                <div key={x.l} style={{ background: x.bg, borderRadius: '10px', padding: '10px 12px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, color: x.c, textTransform: 'uppercase', marginBottom: '3px' }}>{x.l}</div>
+                                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{fmt(x.v)}</div>
                                 </div>
-                                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
-                                    <p className="text-[9px] font-black text-emerald-500 uppercase mb-1 tracking-widest">Paid</p>
-                                    <p className="text-sm font-black text-gray-800">{fmt(detailBuyer.paid)}</p>
-                                </div>
-                                <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100/50">
-                                    <p className="text-[9px] font-black text-rose-500 uppercase mb-1 tracking-widest">Balance</p>
-                                    <p className="text-sm font-black text-gray-800">{fmt(detailBuyer.balance)}</p>
-                                </div>
-                            </div>
+                            ))}
+                        </div>
 
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Transaction History</h4>
-                            
+                        <div style={{ padding: '16px 24px', maxHeight: '50vh', overflowY: 'auto' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Transaction History</div>
                             {detailTransactions.length === 0 ? (
-                                <div className="py-12 text-center text-gray-300 italic text-sm">No transactions in this period.</div>
+                                <div style={{ padding: '36px 16px', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic' }}>No transactions in this period.</div>
                             ) : (
-                                <div className="divide-y divide-gray-50 border border-gray-100 rounded-2xl overflow-hidden">
-                                    {detailTransactions.map((tx, idx) => (
-                                        <div key={idx} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center text-[10px] font-black">
+                                <div style={{ border: '1px solid #f1f5f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                    {detailTransactions.map((tx, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < detailTransactions.length - 1 ? '1px solid #f8fafc' : 'none', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '40px', height: '32px', borderRadius: '7px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#64748b' }}>
                                                     {tx.date.split('-').slice(1).reverse().join('/')}
                                                 </div>
-                                                <div>
-                                                    <p className={`text-[10px] font-black uppercase tracking-widest ${tx.type === 'SALE' ? 'text-blue-500' : 'text-emerald-500'}`}>
-                                                        {tx.type}
-                                                    </p>
-                                                </div>
+                                                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: tx.type === 'SALE' ? '#3b82f6' : '#16a34a' }}>{tx.type}</span>
                                             </div>
-                                            <p className={`text-sm font-black ${tx.type === 'SALE' ? 'text-gray-800' : 'text-emerald-500'}`}>
+                                            <span style={{ fontWeight: 700, fontSize: '14px', color: tx.type === 'SALE' ? '#1e293b' : '#16a34a' }}>
                                                 {tx.type === 'PAID' ? '-' : ''}{fmt(tx.amount)}
-                                            </p>
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-                        
-                        {/* Footer */}
-                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end">
-                            <button 
-                                onClick={() => setDetailBuyer(null)}
-                                className="px-6 py-2 bg-gray-800 text-white text-[11px] font-black rounded-xl hover:bg-gray-700 transition-all shadow-lg"
-                            >
-                                CLOSE
+
+                        <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setDetailBuyer(null)}
+                                style={{ padding: '8px 20px', borderRadius: '9px', background: '#1e293b', color: '#fff', border: 'none', fontWeight: 700, fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'var(--font-sans)' }}>
+                                {t('close')}
                             </button>
                         </div>
                     </div>

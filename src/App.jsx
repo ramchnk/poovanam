@@ -14,6 +14,8 @@ import Accounts from './pages/Accounts';
 import Payments from './pages/Payments';
 import Buyer from './pages/Buyer';
 import Reports from './pages/Reports';
+import Flowers from './pages/Flowers';
+import Settings from './pages/Settings';
 
 const ProtectedRoute = ({ children, user, loading }) => {
   if (loading) return (
@@ -64,6 +66,8 @@ function App() {
           <Route path="buyer" element={<Buyer />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="flowers" element={<Flowers />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

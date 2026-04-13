@@ -74,6 +74,11 @@ const strings = {
     today: 'Today',
     month: 'Month',
     apply: 'Apply',
+    flowers: 'Flowers',
+    paid: 'Paid',
+    net: 'Net',
+    dues: 'Dues',
+    balance: 'Balance',
   },
   ta: {
     back: 'பின்',
@@ -142,8 +147,16 @@ const strings = {
     today: 'இன்று',
     month: 'மாதம்',
     apply: 'பயன்படுத்து',
+    flowers: 'பூக்கள்',
+    paid: 'செலுத்தியது',
+    net: 'நிகர்',
+    dues: 'நிலுவை',
+    balance: 'இருப்பு',
   },
 };
+
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -170,6 +183,8 @@ const Layout = () => {
     if (p.includes('/direct-sales')) return '/app/sales';
     if (p.includes('/sales-entry'))  return '/app/sales';
     if (p.includes('/reports'))      return '/app/sales';
+    if (p.includes('/flowers'))      return '/app/sales';
+    if (p.includes('/settings'))     return '/app/dashboard';
     if (p.includes('/intake'))       return '/app/farmer';
     if (p.includes('/accounts'))     return '/app/dashboard';
     if (p.includes('/sales'))        return '/app/dashboard';
@@ -180,11 +195,13 @@ const Layout = () => {
   // ── Page title ──
   const getTitle = () => {
     const p = location.pathname;
-    if (p.includes('/buyer'))        return `☘️ ${t('buyer')}`;
-    if (p.includes('/payments'))     return `☘️ ${t('cashReceive')}`;
-    if (p.includes('/direct-sales')) return `☘️ ${t('directSales')}`;
-    if (p.includes('/sales-entry'))  return `☘️ ${t('salesEntry')}`;
-    if (p.includes('/reports'))      return `☘️ ${t('reports')}`;
+    if (p.includes('/buyer'))        return `☘️ Sales — ${t('customer')}`;
+    if (p.includes('/payments'))     return `☘️ Sales — ${t('cashReceive')}`;
+    if (p.includes('/direct-sales')) return `☘️ Sales — ${t('directSales')}`;
+    if (p.includes('/sales-entry'))  return `☘️ Sales — ${t('sales')}`;
+    if (p.includes('/reports'))      return `☘️ Sales — ${t('reports')}`;
+    if (p.includes('/flowers'))      return `☘️ Sales — ${t('flowers')}`;
+    if (p.includes('/settings'))     return `☘️ Business Settings`;
     if (p.includes('/intake'))       return `☘️ ${t('intake')}`;
     if (p.includes('/accounts'))     return `☘️ ${t('accounts')}`;
     if (p.includes('/sales'))        return `☘️ ${t('sales')}`;
@@ -192,77 +209,120 @@ const Layout = () => {
     return '';
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('fm_logged_in');
-    sessionStorage.removeItem('fm_tenant');
-    sessionStorage.removeItem('fm_tenant_name');
-    sessionStorage.clear();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      sessionStorage.clear();
+      navigate('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   return (
     <LangContext.Provider value={{ lang, t }}>
-      <div className="page page-main bg-gray-50 flex flex-col min-h-screen">
+      <div className="page page-main flex flex-col min-h-screen">
         <Petals />
 
-        {/* ── Fixed Premium Top Bar ── */}
-        <div className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center px-6 sticky top-0 z-50">
+        {/* ── Premium Glassmorphic Top Bar ── */}
+        <header style={{
+          height: '68px', flexShrink: 0,
+          background: 'rgba(255,255,255,0.88)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          boxShadow: '0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03)',
+          display: 'flex', alignItems: 'center', padding: '0 28px',
+          position: 'sticky', top: 0, zIndex: 50
+        }}>
 
-          {/* Left: Back Action */}
-          <div className="w-48 flex items-center">
+          {/* Left: Back */}
+          <div style={{width: '160px', flexShrink: 0}}>
             {!isDashboard && (
               <button
                 onClick={() => navigate(getParentRoute())}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 font-black text-sm hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
+                style={{background:'#f8fafc', border:'1.5px solid #e2e8f0', color:'#64748b', fontFamily:'var(--font-sans)'}}
+                onMouseEnter={e => Object.assign(e.currentTarget.style, {background:'#ecfdf5', borderColor:'#6ee7b7', color:'#047857'})}
+                onMouseLeave={e => Object.assign(e.currentTarget.style, {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'})}
               >
-                <ChevronLeft size={18} /> {t('back')}
+                <ChevronLeft size={15} /> {t('back')}
               </button>
             )}
           </div>
 
-          {/* Center: Title */}
-          <div className="flex-1 flex justify-center">
-            {getTitle() && (
-              <div className="flex items-center gap-2.5 px-6 py-2 bg-emerald-50/50 rounded-full border border-emerald-100/50 shadow-inner">
-                <h1 className="text-xl font-black text-emerald-800 tracking-tight">{getTitle()}</h1>
+          {/* Center */}
+          <div style={{flex: 1, display:'flex', justifyContent:'center', alignItems:'center'}}>
+            {getTitle() ? (
+              <div style={{
+                display:'flex', alignItems:'center', gap:'8px',
+                padding:'7px 20px',
+                background:'linear-gradient(135deg,#ecfdf5,#f0fdf4)',
+                borderRadius:'100px', border:'1px solid #a7f3d0',
+                boxShadow:'0 1px 3px rgba(16,185,129,0.1)'
+              }}>
+                <span style={{fontFamily:'var(--font-display)', fontWeight:700, fontSize:'14px', color:'#065f46', letterSpacing:'-0.01em'}}>
+                  {getTitle()}
+                </span>
+              </div>
+            ) : (
+              <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <span style={{fontSize:'22px'}}>🌿</span>
+                <span style={{fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:'#047857', letterSpacing:'-0.02em'}}>
+                  Poovanam Market
+                </span>
               </div>
             )}
           </div>
 
-          {/* Right: User Actions */}
-          <div className="w-64 flex items-center justify-end gap-5">
-            <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest hidden lg:block">v2.8</div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200 cursor-help">
-              <User size={18} className="text-blue-500" />
-            </div>
-
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-50 rounded-lg border border-gray-200 text-xs font-bold text-gray-600">
-              <Globe size={14} className="text-blue-400" />
-              <span className="hidden sm:inline">{t('language')}:</span>
+          {/* Right: Actions */}
+          <div style={{width:'220px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'flex-end', gap:'8px'}}>
+            {/* Language picker */}
+            <div style={{
+              display:'flex', alignItems:'center', gap:'5px',
+              padding:'7px 11px', background:'#f8fafc',
+              border:'1.5px solid #e2e8f0', borderRadius:'10px'
+            }}>
+              <Globe size={13} style={{color:'#10b981', flexShrink:0}} />
               <select
                 value={lang}
                 onChange={handleLangChange}
-                className="bg-transparent outline-none border-none pr-4 cursor-pointer"
+                style={{
+                  background:'transparent', outline:'none', border:'none',
+                  cursor:'pointer', color:'#475569', fontWeight:600,
+                  fontFamily:'var(--font-sans)', fontSize:'12px',
+                  padding:0, width:'auto'
+                }}
               >
-                <option value="en">English</option>
+                <option value="en">EN</option>
                 <option value="ta">தமிழ்</option>
               </select>
             </div>
 
+            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 font-black text-xs group"
-              title="End Session"
+              title="Sign Out"
+              style={{
+                display:'flex', alignItems:'center', gap:'5px',
+                padding:'7px 13px', background:'#fff1f2',
+                border:'1.5px solid #fecdd3', borderRadius:'10px',
+                color:'#f43f5e', fontFamily:'var(--font-sans)',
+                fontWeight:700, fontSize:'12px', cursor:'pointer',
+                letterSpacing:'0.04em', textTransform:'uppercase',
+                transition:'all 0.2s'
+              }}
+              onMouseEnter={e => Object.assign(e.currentTarget.style, {background:'#f43f5e', color:'white', borderColor:'#f43f5e', transform:'translateY(-1px)', boxShadow:'0 4px 12px rgba(244,63,94,0.3)'})}
+              onMouseLeave={e => Object.assign(e.currentTarget.style, {background:'#fff1f2', color:'#f43f5e', borderColor:'#fecdd3', transform:'none', boxShadow:'none'})}
             >
-              <LogOut size={16} className="group-hover:rotate-12 transition-transform" />
-              <span className="tracking-tighter uppercase">Logout</span>
+              <LogOut size={13} />
+              Logout
             </button>
           </div>
-        </div>
+        </header>
 
-        <main className="flex-1 p-8 relative z-10 bg-gray-50/30 overflow-x-hidden">
-          <div className="max-w-[1700px] mx-auto w-full">
+        <main style={{flex:1, padding:'28px', position:'relative', zIndex:10, overflowX:'hidden'}}>
+          <div style={{maxWidth:'1700px', margin:'0 auto', width:'100%'}}>
             <Outlet />
           </div>
         </main>

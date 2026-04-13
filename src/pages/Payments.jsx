@@ -1,8 +1,49 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Plus, X, User, DollarSign, Calendar, FileText, ArrowRight, CheckCircle2, Trash2, Edit2 } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { subscribeToCollection, db } from '../utils/storage';
-import { collection, addDoc, doc, updateDoc, increment, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment, deleteDoc } from 'firebase/firestore';
 import { LangContext } from '../components/Layout';
+
+const S = {
+    page: {
+        background: '#fff',
+        borderRadius: '16px',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+        padding: '28px 32px',
+        minHeight: '70vh',
+        fontFamily: 'var(--font-sans)',
+    },
+    header: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '24px',
+    },
+    titleRow: { display: 'flex', alignItems: 'center', gap: '10px' },
+    title: {
+        fontSize: '22px', fontWeight: 800, color: '#1e293b',
+        letterSpacing: '-0.02em', fontFamily: 'var(--font-display)', margin: 0,
+    },
+    btnAdd: {
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '8px 18px', borderRadius: '8px',
+        border: '1.5px solid #16a34a', background: '#fff',
+        color: '#16a34a', fontSize: '13px', fontWeight: 700,
+        cursor: 'pointer', transition: 'all 0.18s',
+        fontFamily: 'var(--font-sans)',
+    },
+    th: {
+        padding: '10px 14px', textAlign: 'left',
+        fontSize: '11px', fontWeight: 700, color: '#16a34a',
+        textTransform: 'uppercase', letterSpacing: '0.08em',
+        borderBottom: '1.5px solid #e5e7eb', whiteSpace: 'nowrap',
+        background: '#fff',
+    },
+    td: {
+        padding: '13px 14px', fontSize: '14px',
+        color: '#374151', borderBottom: '1px solid #f3f4f6',
+        verticalAlign: 'middle',
+    },
+};
 
 const Payments = () => {
     const { t } = useContext(LangContext);
@@ -10,31 +51,17 @@ const Payments = () => {
     const [buyers, setBuyers] = useState([]);
     const [farmers, setFarmers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [paymentType, setPaymentType] = useState('buyer'); // Focus on buyers as per 'Cash Receive' context
+    const [paymentType] = useState('buyer');
 
-    const [formData, setFormData] = useState({
-        entityId: '',
-        amount: '',
-        method: 'Cash',
-        note: ''
-    });
+    const [formData, setFormData] = useState({ entityId: '', amount: '', method: 'Cash', note: '' });
 
-    // ── Real-time Listeners ──
     useEffect(() => {
-        const unsubPayments = subscribeToCollection('payments', (data) => {
-            // Sort by timestamp desc locally if subscription doesn't provide it
-            setPayments(data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-        });
-        const unsubBuyers = subscribeToCollection('buyers', setBuyers);
-        const unsubFarmers = subscribeToCollection('farmers', setFarmers);
-
-        return () => {
-            unsubPayments();
-            unsubBuyers();
-            unsubFarmers();
-        };
+        const u1 = subscribeToCollection('payments', (data) =>
+            setPayments(data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))));
+        const u2 = subscribeToCollection('buyers', setBuyers);
+        const u3 = subscribeToCollection('farmers', setFarmers);
+        return () => { u1(); u2(); u3(); };
     }, []);
 
     const handleOpenModal = () => {
@@ -45,36 +72,18 @@ const Payments = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (isSaving || !formData.entityId || !formData.amount) return;
-        
         setIsSaving(true);
         try {
             const amountNum = parseFloat(formData.amount);
-            const collectionName = paymentType === 'farmer' ? 'farmers' : 'buyers';
-            const entityRef = doc(db, collectionName, formData.entityId);
-
-            // 1. Save Journal Entry
+            const entityRef = doc(db, paymentType === 'farmer' ? 'farmers' : 'buyers', formData.entityId);
             await addDoc(collection(db, 'payments'), {
-                ...formData,
-                amount: amountNum,
-                type: paymentType,
+                ...formData, amount: amountNum, type: paymentType,
                 timestamp: new Date().toISOString()
             });
-
-            // 2. Update Entity Balance
-            // For Farmers: balance + amount (we owe them more if we receive? No, farmers we PAY them. Receive is for Buyers.)
-            // For Buyers: balance - amount (they owe us less)
-            await updateDoc(entityRef, {
-                balance: increment(paymentType === 'farmer' ? -amountNum : -amountNum) 
-            });
-            // Note: In your previous logic, Pay Farmer was increment(amountNum). 
-            // If balance is "what they owe us", then receiving from buyer is -amount.
-            // If balance is "what we owe farmer", then paying them is -amount.
-            // I'll stick to logic that assumes balance = "what they owe us" for buyers.
-
+            await updateDoc(entityRef, { balance: increment(-amountNum) });
             setIsModalOpen(false);
             setFormData({ entityId: '', amount: '', method: 'Cash', note: '' });
         } catch (err) {
-            console.error('Payment Error:', err);
             alert('❌ Failed to record payment: ' + err.message);
         } finally {
             setIsSaving(false);
@@ -82,152 +91,111 @@ const Payments = () => {
     };
 
     const handleDelete = async (p) => {
-        if (!window.confirm('Delete this payment record? This will NOT revert the balance automatically.')) return;
-        try {
-            await deleteDoc(doc(db, 'payments', p.id));
-        } catch (err) {
-            alert('❌ Delete failed');
-        }
+        if (!window.confirm('Delete this payment record?')) return;
+        try { await deleteDoc(doc(db, 'payments', p.id)); }
+        catch { alert('❌ Delete failed'); }
     };
 
     const handleEditNote = async (p) => {
-        const newNote = window.prompt('Edit Short Note:', p.note || '');
+        const newNote = window.prompt('Edit Note:', p.note || '');
         if (newNote === null) return;
-        try {
-            const paymentRef = doc(db, 'payments', p.id);
-            await updateDoc(paymentRef, { note: newNote });
-        } catch (err) {
-            alert('❌ Update failed: ' + err.message);
-        }
+        try { await updateDoc(doc(db, 'payments', p.id), { note: newNote }); }
+        catch (err) { alert('❌ Update failed: ' + err.message); }
     };
 
-    const getEntityName = (id, type) => {
-        const list = type === 'farmer' ? farmers : buyers;
-        return list.find(item => item.id === id)?.name || 'Unknown Entity';
+    const getName = (id, type) => (type === 'farmer' ? farmers : buyers).find(x => x.id === id)?.name || '—';
+    const getDisplayId = (id, type) => (type === 'farmer' ? farmers : buyers).find(x => x.id === id)?.displayId || '—';
+
+    const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
+
+    const formatDate = (iso) => {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
     };
 
-    const getEntityDisplayId = (id, type) => {
-        const list = type === 'farmer' ? farmers : buyers;
-        return list.find(item => item.id === id)?.displayId || '---';
-    };
-
-    const filteredPayments = payments.filter(p => {
-        const name = getEntityName(p.entityId, p.type).toLowerCase();
-        const displayId = getEntityDisplayId(p.entityId, p.type).toString().toLowerCase();
-        const term = searchTerm.toLowerCase();
-        return name.includes(term) || displayId.includes(term) || p.note?.toLowerCase().includes(term);
-    });
-
-    const formatCurrency = (n) =>
-        new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
-
-    const formatDate = (isoStr) => {
-        if (!isoStr) return '---';
-        const date = new Date(isoStr);
-        return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + 
-               date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    };
-
-    const selectedEntity = (paymentType === 'buyer' ? buyers : farmers).find(e => e.id === formData.entityId);
+    const selectedEntity = buyers.find(e => e.id === formData.entityId);
     const openingBalance = selectedEntity?.balance || 0;
-    const amountNum = parseFloat(formData.amount) || 0;
-    const closingBalance = openingBalance - amountNum;
+    const closingBalance = openingBalance - (parseFloat(formData.amount) || 0);
+
+    // Filter to show only buyer payments in this view
+    const buyerPayments = payments.filter(p => p.type === 'buyer');
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in duration-500">
-            
-            {/* ── Page Header ── */}
-            <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                    <div className="text-4xl text-emerald-600 font-bold">💰</div>
-                    <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{t('cashReceive')}</h2>
+        <div style={S.page}>
+            {/* ── Header ── */}
+            <div style={S.header}>
+                <div style={S.titleRow}>
+                    <span style={{ fontSize: '22px' }}>💰</span>
+                    <h2 style={S.title}>{t('cashReceive')}</h2>
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleOpenModal}
-                        className="flex items-center gap-1.5 px-5 py-2 bg-white border-2 border-emerald-500 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50 transition-colors shadow-sm"
-                    >
-                        <Plus size={16} /> {t('receivePayment')}
-                    </button>
-                </div>
-            </div>
-
-            {/* ── Search (Symbol Removed) ── */}
-            <div className="mb-6">
-                <div className="relative max-w-sm">
-                    <input
-                        type="text"
-                        placeholder={t('search')}
-                        className="w-full px-6 py-2.5 border-2 border-emerald-500 rounded-full text-sm font-medium text-gray-700 bg-white outline-none focus:ring-2 focus:ring-emerald-100 transition-all placeholder:text-gray-400"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                <button
+                    style={S.btnAdd}
+                    onClick={handleOpenModal}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#16a34a'; }}
+                >
+                    <Plus size={14} /> {t('receivePayment')}
+                </button>
             </div>
 
             {/* ── Table ── */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
+            <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr className="bg-emerald-50 text-emerald-800">
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest rounded-l-xl">{t('date')}</th>
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest">{t('customerId')}</th>
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest">{t('customerName')}</th>
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest">{t('amountReceived')}</th>
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest">{t('notes')}</th>
-                            <th className="px-5 py-3 text-xs font-black uppercase tracking-widest rounded-r-xl">{t('action')}</th>
+                        <tr>
+                            <th style={S.th}>{t('date')}</th>
+                            <th style={S.th}>{t('customerName')}</th>
+                            <th style={{ ...S.th, textAlign: 'right' }}>{t('amountReceived')}</th>
+                            <th style={S.th}>{t('notes')}</th>
+                            <th style={{ ...S.th, textAlign: 'center' }}>{t('action')}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredPayments.length === 0 ? (
+                        {buyerPayments.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="py-24 text-center text-gray-400 italic font-medium">
+                                <td colSpan={5} style={{ padding: '60px 16px', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '14px' }}>
                                     {t('noRecords')}
                                 </td>
                             </tr>
                         ) : (
-                            filteredPayments.map((p) => (
-                                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
-                                    <td className="px-5 py-4 text-xs font-bold text-gray-500">
+                            buyerPayments.map((p, idx) => (
+                                <tr key={p.id}
+                                    style={{ background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
+                                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#fafafa'}
+                                >
+                                    <td style={{ ...S.td, color: '#64748b', fontSize: '13px' }}>
                                         {formatDate(p.timestamp)}
                                     </td>
-                                    <td className="px-5 py-4">
-                                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[10px] font-black tracking-tighter">
-                                            #{getEntityDisplayId(p.entityId, p.type)}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-gray-800">{getEntityName(p.entityId, p.type)}</span>
-                                            <span className="text-[10px] uppercase tracking-wider font-black text-gray-300">{p.type}</span>
+                                    <td style={{ ...S.td, fontWeight: 600 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px' }}>
+                                                #{getDisplayId(p.entityId, p.type)}
+                                            </span>
+                                            {getName(p.entityId, p.type)}
                                         </div>
                                     </td>
-                                    <td className="px-5 py-4">
-                                        <span className="font-black text-emerald-600 text-lg">
-                                            {formatCurrency(p.amount)}
-                                        </span>
-                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.method}</div>
+                                    <td style={{ ...S.td, textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: '15px' }}>
+                                        {fmt(p.amount)}
+                                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase' }}>{p.method}</div>
                                     </td>
-                                    <td className="px-5 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                        <div className="flex items-center gap-2">
+                                    <td style={{ ...S.td, color: '#64748b' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <span>{p.note || '—'}</span>
-                                            <button 
-                                                onClick={() => handleEditNote(p)}
-                                                className="p-1 text-gray-300 hover:text-[#1e8a44] transition-colors"
-                                                title="Edit Note"
-                                            >
-                                                <Edit2 size={12} />
-                                            </button>
+                                            <button onClick={() => handleEditNote(p)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e1', display: 'flex', padding: '2px' }}
+                                                onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
+                                                onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
+                                            ><Edit2 size={12} /></button>
                                         </div>
                                     </td>
-                                    <td className="px-5 py-4">
-                                        <button 
-                                            onClick={() => handleDelete(p)}
-                                            className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <td style={{ ...S.td, textAlign: 'center' }}>
+                                        <button onClick={() => handleDelete(p)}
+                                            style={{ background: '#fff1f2', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f43f5e' }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = '#f43f5e'; e.currentTarget.style.color = '#fff'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.color = '#f43f5e'; }}
+                                        ><Trash2 size={13} /></button>
                                     </td>
                                 </tr>
                             ))
@@ -236,115 +204,101 @@ const Payments = () => {
                 </table>
             </div>
 
-            {/* ── Cash Receive Modal (Matches Screenshot Exactly) ── */}
+            {/* ── Receive Payment Modal ── */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-[600px] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-                        
-                        {/* Solid Green Header */}
-                        <div className="px-6 py-4 bg-[#1e8a44] flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-white">{t('cashReceive')}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-white/80 hover:text-white transition-colors">
-                                <X size={20} strokeWidth={3} />
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
+                    <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
+                        {/* Modal Header — solid green */}
+                        <div style={{ background: '#16a34a', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>{t('cashReceive')}</span>
+                            <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex' }}>
+                                <X size={20} strokeWidth={2.5} />
                             </button>
                         </div>
 
-                        {/* Modal Body */}
-                        <form onSubmit={handleSave} className="p-8 space-y-8">
-                            
-                            <div className="space-y-6 max-w-lg mx-auto">
-                                {/* Customer Row */}
-                                <div className="flex items-center">
-                                    <label className="w-1/3 text-gray-700 font-bold">{t('customer')}</label>
-                                    <div className="w-2/3">
-                                        <select 
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-[#1e8a44] outline-none font-medium text-gray-700 text-sm"
-                                            value={formData.entityId}
-                                            onChange={e => setFormData({ ...formData, entityId: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">{t('selectCustomer')}</option>
-                                            {(paymentType === 'buyer' ? buyers : farmers).map(item => (
-                                                <option key={item.id} value={item.id}>{item.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
+                        <form onSubmit={handleSave} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                            {/* Customer */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <label style={{ width: '140px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#374151' }}>{t('customer')}</label>
+                                <select
+                                    value={formData.entityId}
+                                    onChange={e => setFormData({ ...formData, entityId: e.target.value })}
+                                    required
+                                    style={{ flex: 1, padding: '9px 12px', borderRadius: '9px', border: '1.5px solid #e2e8f0', background: '#fff', fontSize: '14px', fontWeight: 500, color: '#1e293b', outline: 'none', fontFamily: 'var(--font-sans)' }}
+                                    onFocus={e => e.target.style.borderColor = '#16a34a'}
+                                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                >
+                                    <option value="">{t('selectCustomer')}</option>
+                                    {buyers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                            </div>
 
-                                {/* Opening Balance Row */}
-                                <div className="flex items-center">
-                                    <label className="w-1/3 text-gray-700 font-bold">{t('openingBalance')}</label>
-                                    <div className="w-2/3 text-gray-800 font-black text-lg">
-                                        {formatCurrency(openingBalance)}
-                                    </div>
-                                </div>
+                            {/* Opening Balance */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <label style={{ width: '140px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#374151' }}>{t('openingBalance')}</label>
+                                <span style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>{fmt(openingBalance)}</span>
+                            </div>
 
-                                {/* givenAmount Row */}
-                                <div className="flex items-center">
-                                    <label className="w-1/3 text-gray-700 font-bold">{t('givenAmount')}</label>
-                                    <div className="w-2/3 flex items-center gap-4">
-                                        <input 
-                                            type="number" 
-                                            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:border-[#1e8a44] outline-none font-bold text-gray-800"
-                                            placeholder="0.00"
-                                            value={formData.amount}
-                                            onChange={e => setFormData({ ...formData, amount: e.target.value })}
-                                            required
+                            {/* Given Amount */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <label style={{ width: '140px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#374151' }}>{t('givenAmount')}</label>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={formData.amount}
+                                        onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                                        required
+                                        min="1"
+                                        style={{ flex: 1, padding: '9px 12px', borderRadius: '9px', border: '1.5px solid #e2e8f0', fontSize: '14px', fontWeight: 700, color: '#1e293b', outline: 'none', fontFamily: 'var(--font-sans)' }}
+                                        onFocus={e => e.target.style.borderColor = '#16a34a'}
+                                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                    />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#64748b', whiteSpace: 'nowrap' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.method === 'UPI'}
+                                            onChange={e => setFormData({ ...formData, method: e.target.checked ? 'UPI' : 'Cash' })}
+                                            style={{ accentColor: '#16a34a', width: '15px', height: '15px' }}
                                         />
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input 
-                                                type="checkbox" 
-                                                className="w-4 h-4 accent-[#1e8a44]" 
-                                                checked={formData.method === 'UPI'}
-                                                onChange={(e) => setFormData({...formData, method: e.target.checked ? 'UPI' : 'Cash'})}
-                                            />
-                                            <span className="text-sm font-bold text-gray-500">GPay</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* closingBalance Row */}
-                                <div className="flex items-center">
-                                    <label className="w-1/3 text-gray-700 font-bold">{t('closingBalance')}</label>
-                                    <div className="w-2/3 text-[#1e8a44] font-black text-xl">
-                                        {formatCurrency(closingBalance)}
-                                    </div>
-                                </div>
-
-                                {/* Short Note Row */}
-                                <div className="flex items-center">
-                                    <label className="w-1/3 text-gray-700 font-bold">{t('notes')}</label>
-                                    <div className="w-2/3">
-                                        <input 
-                                            type="text" 
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-[#1e8a44] outline-none font-medium text-gray-700"
-                                            placeholder="..."
-                                            value={formData.note}
-                                            onChange={e => setFormData({ ...formData, note: e.target.value })}
-                                        />
-                                    </div>
+                                        GPay
+                                    </label>
                                 </div>
                             </div>
 
-                            {/* Footer Buttons */}
-                            <div className="pt-10 flex items-center justify-end gap-3">
-                                <button 
-                                    type="submit" 
-                                    disabled={isSaving}
-                                    className="w-14 h-11 bg-[#1e8a44] text-white rounded-lg flex items-center justify-center shadow-md hover:bg-[#166d35] transition-all disabled:opacity-50"
-                                >
-                                    {isSaving ? (
-                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    ) : (
-                                        <CheckCircle2 size={24} strokeWidth={3} />
-                                    )}
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-6 h-11 bg-[#64748b] text-white rounded-lg font-bold text-sm shadow-md hover:bg-[#475569] transition-all"
-                                >
+                            {/* Closing Balance */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <label style={{ width: '140px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#374151' }}>{t('closingBalance')}</label>
+                                <span style={{ fontSize: '18px', fontWeight: 800, color: closingBalance < 0 ? '#f43f5e' : '#16a34a' }}>{fmt(closingBalance)}</span>
+                            </div>
+
+                            {/* Note */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <label style={{ width: '140px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#374151' }}>{t('notes')}</label>
+                                <input
+                                    type="text"
+                                    placeholder="..."
+                                    value={formData.note}
+                                    onChange={e => setFormData({ ...formData, note: e.target.value })}
+                                    style={{ flex: 1, padding: '9px 12px', borderRadius: '9px', border: '1.5px solid #e2e8f0', fontSize: '14px', color: '#374151', outline: 'none', fontFamily: 'var(--font-sans)' }}
+                                    onFocus={e => e.target.style.borderColor = '#16a34a'}
+                                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                />
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px' }}>
+                                <button type="button" onClick={() => setIsModalOpen(false)}
+                                    style={{ padding: '9px 20px', borderRadius: '9px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                                     {t('close')}
+                                </button>
+                                <button type="submit" disabled={isSaving}
+                                    style={{ padding: '9px 20px', borderRadius: '9px', background: '#16a34a', border: 'none', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)' }}>
+                                    {isSaving
+                                        ? <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                        : <CheckCircle2 size={16} />
+                                    }
+                                    Save
                                 </button>
                             </div>
                         </form>
@@ -356,4 +310,3 @@ const Payments = () => {
 };
 
 export default Payments;
-
