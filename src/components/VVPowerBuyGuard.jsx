@@ -85,7 +85,7 @@ const VVPowerBuyGuard = ({ children }) => {
             fontFamily: 'var(--font-display)',
             letterSpacing: '-0.02em',
           }}>
-            VV Power Buy
+            VV
           </h2>
           <p style={{
             fontSize: '13px',
@@ -169,7 +169,7 @@ const VVPowerBuyGuard = ({ children }) => {
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(217,119,6,0.45)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(217,119,6,0.35)'; }}
           >
-            🔓 Unlock VV Power Buy
+            🔓 Unlock VV
           </button>
         </form>
       </div>

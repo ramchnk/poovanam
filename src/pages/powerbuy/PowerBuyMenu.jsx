@@ -145,7 +145,7 @@ const PowerBuyMenu = () => {
           fontSize: '22px', color: '#fff', letterSpacing: '0.06em',
           textTransform: 'uppercase',
         }}>
-          VV Power Buy
+          VV
         </span>
         <span style={{ fontSize: '26px' }}>⚡</span>
       </div>
