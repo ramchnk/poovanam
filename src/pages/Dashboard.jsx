@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LangContext } from '../components/Layout';
 import { useTenant } from '../utils/TenantContext';
+import VVLogo from '../components/VVLogo';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -40,12 +41,14 @@ const Dashboard = () => {
                 <button
                     onClick={() => navigate('/app/power-buy')}
                     className="group relative overflow-hidden border-4 p-10 rounded-[40px] shadow-2xl transition-all transform hover:-translate-y-2 active:scale-95 flex items-center justify-center gap-8"
-                    style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)', borderColor: '#c4b5fd', boxShadow: '0 20px 48px rgba(124,58,237,0.12)' }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 28px 64px rgba(124,58,237,0.25)'; e.currentTarget.style.borderColor = '#7c3aed'; }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 20px 48px rgba(124,58,237,0.12)'; e.currentTarget.style.borderColor = '#c4b5fd'; }}
+                    style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderColor: '#fbbf24', boxShadow: '0 20px 48px rgba(251,191,36,0.18)' }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 28px 64px rgba(217,119,6,0.32)'; e.currentTarget.style.borderColor = '#d97706'; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 20px 48px rgba(251,191,36,0.18)'; e.currentTarget.style.borderColor = '#fbbf24'; }}
                 >
-                    <div className="text-6xl group-hover:rotate-12 transition-transform">⚡</div>
-                    <span className="text-5xl font-black tracking-tighter italic" style={{ color: '#7c3aed' }}>Power Buy</span>
+                    <span className="text-5xl font-black tracking-tighter italic flex items-center gap-3" style={{ color: '#92400e' }}>
+                        <span className="group-hover:scale-110 transition-transform inline-flex"><VVLogo size={44} /></span>
+                        Power Buy
+                    </span>
                 </button>
 
                 <button
