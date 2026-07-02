@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import { Trash2, Plus, History, IndianRupee, Save, X, ChevronLeft, Printer, FileText, Search, Download, MessageCircle, Pencil, Users, Upload, FileSpreadsheet, Download as DownloadIcon, Scan } from 'lucide-react';
 import { db, subscribeToCollection, saveOutsidePurchase, saveVendor, deleteVendor, getTenant } from '../utils/storage';
-import { doc, updateDoc, increment, serverTimestamp, deleteDoc, collection, addDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp, deleteDoc, collection, addDoc, getDoc, deleteField } from 'firebase/firestore';
 import { LangContext } from '../components/Layout';
 import * as XLSX from 'xlsx';
 import { generateLedgerCanvas, generatePaymentReceiptCanvas, generatePurchaseReceiptCanvas } from '../utils/receiptCanvas';
@@ -2017,7 +2017,41 @@ const OutsideShop = () => {
                                                 </button>
                                                 <button onClick={async () => {
                                                     if(window.confirm(t('delete') + '?')) {
+                                                        // 1. Revert settlement details on purchases if it was a settlement
+                                                        if (p.isSettlement && p.settlementDetails && p.settlementDetails.length > 0) {
+                                                            for (const item of p.settlementDetails) {
+                                                                try {
+                                                                    const purRef = doc(db, 'outside_purchases', item.purchaseId);
+                                                                    const purSnap = await getDoc(purRef);
+                                                                    if (purSnap.exists()) {
+                                                                        const purData = purSnap.data();
+                                                                        const oldPaid = purData.paidAmount || 0;
+                                                                        const newPaid = Math.max(0, oldPaid - (item.amountPaid || 0));
+                                                                        const newOutstanding = Math.max(0, purData.grandTotal - newPaid);
+                                                                        
+                                                                        const updates = {};
+                                                                        if (newPaid <= 0.01) {
+                                                                            updates.paidAmount = deleteField();
+                                                                            updates.status = deleteField();
+                                                                            updates.settlementPaymentId = deleteField();
+                                                                        } else {
+                                                                            updates.paidAmount = newPaid;
+                                                                            updates.status = 'Pending';
+                                                                        }
+                                                                        updates.outstandingAmount = newOutstanding;
+                                                                        
+                                                                        await updateDoc(purRef, updates);
+                                                                    }
+                                                                } catch (err) {
+                                                                    console.error("Error reverting purchase on payment delete:", err);
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // 2. Delete the payment document
                                                         await deleteDoc(doc(p.tenantId ? db : db, 'payments', p.id));
+                                                        
+                                                        // 3. Update the vendor's balance
                                                         await updateDoc(doc(db, 'vendors', p.entityId), { balance: increment(p.amount) });
                                                     }
                                                 }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #fee2e2', background: '#fff', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
